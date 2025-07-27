@@ -17,8 +17,14 @@
     "forceConsistentCasingInFileNames": true,
     "moduleResolution": "node",
     "resolveJsonModule": true,
-    "allowSyntheticDefaultImports": true
+    "allowSyntheticDefaultImports": true,
+    "composite": true,
+    "paths": {
+      "@helpdeskly/prisma-control": ["libs/prisma-control/src"],
+      "@helpdeskly/prisma-tenant": ["libs/prisma-tenant/src"]
+    }
   },
+
   "exclude": ["node_modules", "dist"],
   "references": [
     {

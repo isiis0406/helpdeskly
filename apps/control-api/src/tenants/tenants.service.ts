@@ -1,8 +1,7 @@
+import { PrismaClient as ControlPrismaService } from ".prisma/control"; // Adjust the import path as necessary
 import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { addDays } from "date-fns";
-
-import { ControlPrismaService } from "../prisma/control-prisma.service";
 import { CreateTenantDto } from "./dto/create-tenant.dto";
 
 import { InjectQueue } from "@nestjs/bull";

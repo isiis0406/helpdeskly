@@ -1,4 +1,12 @@
+packages:
+  - apps/*
+  - libs/*
+
 onlyBuiltDependencies:
+  - '@nestjs/core'
   - '@prisma/client'
   - '@prisma/engines'
+  - es5-ext
+  - fsevents
+  - msgpackr-extract
   - prisma

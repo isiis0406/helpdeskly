@@ -1,6 +1,5 @@
 import { BullModule } from "@nestjs/bullmq";
 import { Module } from "@nestjs/common";
-import { ControlPrismaService } from "../prisma/control-prisma.service";
 import { TenantsController } from "./tenants.controller";
 import { TenantsService } from "./tenants.service";
 
@@ -11,6 +10,6 @@ import { TenantsService } from "./tenants.service";
     }),
   ],
   controllers: [TenantsController],
-  providers: [TenantsService, ControlPrismaService],
+  providers: [TenantsService],
 })
 export class TenantsModule {}

@@ -6,7 +6,9 @@
     "outDir": "./dist",
     "baseUrl": "./",
     "skipLibCheck": true,
-    "composite": true
+    "composite": true,
+    "rootDir": "../../",
+    "paths": {}
   },
   "ts-node": {
     "compilerOptions": {
@@ -15,6 +17,5 @@
       "skipLibCheck": true
     }
   },
-  "include": ["src/**/*"],
   "exclude": ["node_modules", "dist", "test"]
 }

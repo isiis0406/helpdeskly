@@ -1,7 +1,7 @@
+import { PrismaClient as ControlPrismaService } from ".prisma/control";
 import { Processor, WorkerHost } from "@nestjs/bullmq";
 import { Logger } from "@nestjs/common";
 import { Job } from "bullmq";
-import { ControlPrismaService } from "../prisma/control-prisma.service";
 import { MigratorService } from "../utils/migrator.service";
 import { PostgresFactory } from "../utils/postgres.factory";
 

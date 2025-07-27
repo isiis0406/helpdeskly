@@ -5,12 +5,28 @@
   "main": "index.js",
   "private": true,
   "workspaces": [
-    "apps/*"
+    "apps/*",
+    "libs/*"
   ],
   "scripts": {
     "dev:control": "pnpm --filter control-api start:dev",
     "dev:app": "pnpm --filter app-api start:dev",
     "dev": "concurrently \"pnpm dev:control\" \"pnpm dev:app\""
+  },
+  "pnpm": {
+    "overrides": {
+      "typescript": "^5.4.0"
+    },
+    "onlyBuiltDependencies": [
+      "@nestjs/core",
+      "@prisma/client",
+      "@prisma/engines",
+      "@swc/core",
+      "es5-ext",
+      "fsevents",
+      "msgpackr-extract",
+      "prisma"
+    ]
   },
   "keywords": [],
   "author": "",
