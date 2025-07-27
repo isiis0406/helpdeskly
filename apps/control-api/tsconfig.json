@@ -5,7 +5,8 @@
     "lib": ["ES2022"],
     "outDir": "./dist",
     "baseUrl": "./",
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "composite": true
   },
   "ts-node": {
     "compilerOptions": {
