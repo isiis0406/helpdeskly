@@ -15,6 +15,10 @@ model Ticket {
   status      TicketStatus   @default(OPEN)
   priority    TicketPriority @default(MEDIUM)
   comments    Comment[]
+  authorId    String
+  author      User          @relation("TicketAuthor", fields: [authorId], references: [id])
+  assignedToId String?
+  assignedTo  User?         @relation("TicketAssignee", fields: [assignedToId], references: [id])
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
 }
@@ -35,6 +39,10 @@ model User {
   name      String
   role      UserRole
   comments  Comment[]
+  tickets   Ticket[] @relation("TicketAuthor")
+  assignedTickets Ticket[] @relation("TicketAssignee")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 enum TicketStatus {
