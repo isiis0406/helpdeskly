@@ -1,0 +1,27 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("CONTROL_DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../node_modules/.prisma/control"
+}
+
+model Tenant {
+  id            String        @id @default(cuid())
+  slug          String        @unique
+  dbUrl         String
+  status        TenantStatus  @default(PROVISIONING)
+  trialEndsAt   DateTime?
+  schemaVersion Int           @default(1)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+}
+
+enum TenantStatus {
+  PROVISIONING
+  ACTIVE
+  SUSPENDED
+  CLOSED
+}
