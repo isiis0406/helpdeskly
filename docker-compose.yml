@@ -55,6 +55,8 @@ services:
       PGADMIN_LISTEN_PORT: 80
     volumes:
       - pgadmin_data:/var/lib/pgadmin # conserve tes favoris
+      - ./pgadmin/servers.json:/pgadmin4/servers.json # ← Configuration des serveurs pgAdmin
+
     depends_on:
       - postgres
     # facultatif, mais pratique pour copier un servers.json pré-configuré :
