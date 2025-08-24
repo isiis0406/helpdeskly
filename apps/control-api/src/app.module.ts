@@ -1,5 +1,5 @@
 // apps/control-api/src/app.module.ts
-import { BullModule } from '@nestjs/bull';
+import { BullModule } from '@nestjs/bullmq';
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
@@ -21,7 +21,7 @@ import { TenantsModule } from './tenants/tenants.module';
       ],
     }),
     BullModule.forRoot({
-      redis: {
+      connection: {
         host: process.env.REDIS_HOST || 'localhost',
         port: Number(process.env.REDIS_PORT) || 6379,
       },

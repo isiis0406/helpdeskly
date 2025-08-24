@@ -1,6 +1,6 @@
 // apps/control-api/src/tenants/tenants.module.ts
 import { PrismaClient as ControlPrismaClient } from '.prisma/control';
-import { BullModule } from '@nestjs/bull';
+import { BullModule } from '@nestjs/bullmq';
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TenantsController } from './tenants.controller';

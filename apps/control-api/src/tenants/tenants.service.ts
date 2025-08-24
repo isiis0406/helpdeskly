@@ -1,5 +1,5 @@
 import { PrismaClient as ControlPrismaClient } from '.prisma/control';
-import { InjectQueue } from '@nestjs/bull';
+import { InjectQueue } from '@nestjs/bullmq';
 import {
   BadRequestException,
   ConflictException,
