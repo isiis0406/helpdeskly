@@ -6,7 +6,13 @@ import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
   {
-    ignores: ['eslint.config.mjs', 'dist/**', 'node_modules/**', '**/*.js'],
+    ignores: [
+      'eslint.config.mjs',
+      'dist/**',
+      'node_modules/**',
+      '**/*.js',
+      '*',
+    ],
   },
   eslint.configs.recommended,
   eslintPluginPrettierRecommended,

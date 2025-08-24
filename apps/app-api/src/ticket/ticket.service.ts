@@ -1,5 +1,14 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { ControlPrismaService } from '../prisma/control-prisma.service';
+// apps/app-api/src/ticket/ticket.service.ts
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
+import {
+  UserEnrichmentService,
+  UserInfo,
+} from 'src/user-enrichment/user-enrichment.service';
 import { TenantPrismaService } from '../services/tenant-prisma.service';
 import { CreateTicketDto } from './dto/create-ticket.dto';
 
@@ -9,16 +18,21 @@ export class TicketsService {
 
   constructor(
     private readonly tenantPrisma: TenantPrismaService,
-    private readonly controlPrisma: ControlPrismaService,
+    private readonly userEnrichment: UserEnrichmentService,
   ) {}
 
-  async findAll() {
+  async findAll(): Promise<
+    (any & { author?: UserInfo; assignedTo?: UserInfo })[]
+  > {
     const tickets = await this.tenantPrisma.client.ticket.findMany({
       orderBy: { createdAt: 'desc' },
     });
 
-    // Enrichissement avec les données utilisateur depuis control
-    return this.enrichTicketsWithUsers(tickets);
+    // 🔧 AMÉLIORATION : Enrichissement centralisé
+    return this.userEnrichment.enrichEntities(tickets, [
+      'authorId',
+      'assignedToId',
+    ]);
   }
 
   async findOne(id: string) {
@@ -28,15 +42,34 @@ export class TicketsService {
     });
 
     if (!ticket) {
-      throw new Error(`Ticket ${id} not found`);
+      throw new NotFoundException(`Ticket ${id} not found`);
     }
 
-    return this.enrichTicketWithUsers(ticket);
+    // 🔧 AMÉLIORATION : Enrichissement centralisé
+    return this.userEnrichment.enrichEntity(ticket, [
+      'authorId',
+      'assignedToId',
+    ]);
   }
 
   async create(dto: CreateTicketDto) {
-    // Validation que l'auteur existe dans le tenant courant
-    await this.validateUserMembership(dto.authorId);
+    // 🔧 AMÉLIORATION : Validation centralisée
+    const userValidations = await this.userEnrichment.validateUsersMembership([
+      dto.authorId,
+      ...(dto.assignedToId ? [dto.assignedToId] : []),
+    ]);
+
+    if (!userValidations[dto.authorId]) {
+      throw new BadRequestException(
+        `Author ${dto.authorId} is not a member of this tenant`,
+      );
+    }
+
+    if (dto.assignedToId && !userValidations[dto.assignedToId]) {
+      throw new BadRequestException(
+        `Assignee ${dto.assignedToId} is not a member of this tenant`,
+      );
+    }
 
     const ticket = await this.tenantPrisma.client.ticket.create({
       data: {
@@ -49,13 +82,23 @@ export class TicketsService {
       },
     });
 
-    return this.enrichTicketWithUsers(ticket);
+    return this.userEnrichment.enrichEntity(ticket, [
+      'authorId',
+      'assignedToId',
+    ]);
   }
 
   async update(id: string, dto: Partial<CreateTicketDto>) {
-    // Validation des utilisateurs si modifiés
+    // 🔧 AMÉLIORATION : Validation seulement si nécessaire
     if (dto.assignedToId) {
-      await this.validateUserMembership(dto.assignedToId);
+      const isValid = await this.userEnrichment.validateUserMembership(
+        dto.assignedToId,
+      );
+      if (!isValid) {
+        throw new BadRequestException(
+          `Assignee ${dto.assignedToId} is not a member of this tenant`,
+        );
+      }
     }
 
     const ticket = await this.tenantPrisma.client.ticket.update({
@@ -63,70 +106,15 @@ export class TicketsService {
       data: dto,
     });
 
-    return this.enrichTicketWithUsers(ticket);
+    return this.userEnrichment.enrichEntity(ticket, [
+      'authorId',
+      'assignedToId',
+    ]);
   }
 
   async delete(id: string) {
     return this.tenantPrisma.client.ticket.delete({
       where: { id },
     });
-  }
-
-  // Méthodes privées pour enrichissement des données
-  private async enrichTicketsWithUsers(tickets: any[]) {
-    const userIds = [
-      ...tickets.map((t) => t.authorId),
-      ...tickets.map((t) => t.assignedToId).filter(Boolean),
-    ];
-
-    const users = await this.getUsersByIds(userIds);
-    const userMap = new Map(users.map((u) => [u.id, u]));
-
-    return tickets.map((ticket) => ({
-      ...ticket,
-      author: userMap.get(ticket.authorId),
-      assignedTo: ticket.assignedToId ? userMap.get(ticket.assignedToId) : null,
-    }));
-  }
-
-  private async enrichTicketWithUsers(ticket: any) {
-    const userIds = [ticket.authorId, ticket.assignedToId].filter(Boolean);
-    const users = await this.getUsersByIds(userIds);
-    const userMap = new Map(users.map((u) => [u.id, u]));
-
-    return {
-      ...ticket,
-      author: userMap.get(ticket.authorId),
-      assignedTo: ticket.assignedToId ? userMap.get(ticket.assignedToId) : null,
-    };
-  }
-
-  private async getUsersByIds(userIds: string[]) {
-    if (userIds.length === 0) return [];
-
-    return this.controlPrisma.user.findMany({
-      where: { id: { in: userIds } },
-      select: { id: true, name: true, email: true, avatar: true },
-    });
-  }
-
-  private async validateUserMembership(userId: string) {
-    const tenant = this.tenantPrisma.getTenantInfo();
-
-    const membership = await this.controlPrisma.membership.findFirst({
-      where: {
-        userId,
-        tenantId: tenant.id,
-        isActive: true,
-      },
-    });
-
-    if (!membership) {
-      throw new Error(
-        `User ${userId} is not a member of tenant ${tenant.slug}`,
-      );
-    }
-
-    return membership;
   }
 }
