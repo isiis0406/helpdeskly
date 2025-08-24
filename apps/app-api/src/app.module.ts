@@ -62,6 +62,7 @@ import { UserEnrichmentService } from './user-enrichment/user-enrichment.service
     TenantPrismaService,
     TenantResolutionService,
     DatabaseUrlService,
+    UserEnrichmentService,
   ],
 })
 export class AppModule {
