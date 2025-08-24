@@ -1,53 +1,52 @@
-datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-}
-
 generator client {
   provider = "prisma-client-js"
   output   = "../../node_modules/.prisma/tenant"
 }
 
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
 model Ticket {
-  id          String        @id @default(cuid())
+  id          String         @id @default(cuid())
   title       String
   description String
   status      TicketStatus   @default(OPEN)
   priority    TicketPriority @default(MEDIUM)
-  comments    Comment[]
-  authorId    String
-  author      User          @relation("TicketAuthor", fields: [authorId], references: [id])
-  assignedToId String?
-  assignedTo  User?         @relation("TicketAssignee", fields: [assignedToId], references: [id])
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
+
+  // CHANGEMENT: Référence vers User central (ID seulement)
+  authorId     String // User ID de la DB control
+  assignedToId String? // User ID de la DB control
+
+  // Relations locales uniquement
+  comments Comment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("tickets")
 }
 
 model Comment {
-  id        String   @id @default(cuid())
-  ticketId  String
-  ticket    Ticket   @relation(fields: [ticketId], references: [id])
-  authorId  String
-  author    User     @relation(fields: [authorId], references: [id])
-  body      String
-  createdAt DateTime @default(now())
-}
+  id       String @id @default(cuid())
+  body     String
+  ticketId String
+  authorId String // User ID de la DB control
 
-model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  name      String
-  role      UserRole
-  comments  Comment[]
-  tickets   Ticket[] @relation("TicketAuthor")
-  assignedTickets Ticket[] @relation("TicketAssignee")
+  // Relations
+  ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@map("comments")
 }
 
 enum TicketStatus {
   OPEN
   IN_PROGRESS
+  RESOLVED
   CLOSED
 }
 
@@ -55,9 +54,5 @@ enum TicketPriority {
   LOW
   MEDIUM
   HIGH
-}
-
-enum UserRole {
-  AGENT
-  CUSTOMER
+  URGENT
 }

@@ -14,6 +14,6 @@ docker compose up -d
 # 1. Install deps
 pnpm install
 # 2. Generate Prisma clients
-pnpm --filter control-api prisma generate
-pnpm --filter app-api prisma generate
+pnpm exec prisma generate --schema=prisma/tenant/schema.prisma
+pnpm exec prisma generate --schema=prisma/control/schema.prisma
 ```

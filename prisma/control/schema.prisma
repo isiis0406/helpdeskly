@@ -1,27 +1,103 @@
-datasource db {
-  provider = "postgresql"
-  url      = env("CONTROL_DATABASE_URL")
-}
-
 generator client {
   provider = "prisma-client-js"
   output   = "../../node_modules/.prisma/control"
 }
 
+datasource db {
+  provider = "postgresql"
+  url      = env("CONTROL_DATABASE_URL")
+}
+
 model Tenant {
-  id            String        @id @default(cuid())
-  slug          String        @unique
-  dbUrl         String
-  status        TenantStatus  @default(PROVISIONING)
+  id   String  @id @default(cuid())
+  name String? @default("")
+  slug String  @unique
+
+  // NOUVEAU: Approche hybride selon environnement
+  dbUrl     String? // Utilisé en développement (peut être null en prod)
+  secretRef String? // Référence secret manager (prod uniquement)
+  region    String  @default("eu-west-1")
+
+  status        TenantStatus @default(PROVISIONING)
   trialEndsAt   DateTime?
-  schemaVersion Int           @default(1)
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  schemaVersion Int          @default(1)
+
+  // NOUVEAU: Relations avec utilisateurs centralisés
+  memberships Membership[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("tenants")
+}
+
+// Utilisateurs centralisés (plus de duplication)
+model User {
+  id       String  @id @default(cuid())
+  email    String  @unique
+  name     String
+  avatar   String?
+  isActive Boolean @default(true)
+
+  // Relations
+  memberships Membership[]
+  sessions    Session[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("users")
+}
+
+// Appartenance multi-tenant
+model Membership {
+  id       String     @id @default(cuid())
+  userId   String
+  tenantId String
+  role     MemberRole @default(MEMBER)
+  isActive Boolean    @default(true)
+
+  // Relations
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, tenantId])
+  @@map("memberships")
+}
+
+// Sessions avec workspace courant
+model Session {
+  id           String   @id @default(cuid())
+  userId       String
+  tenantId     String? // Workspace courant (optionnel)
+  accessToken  String   @unique
+  refreshToken String?  @unique
+  expiresAt    DateTime
+  userAgent    String?
+  ipAddress    String?
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("sessions")
 }
 
 enum TenantStatus {
   PROVISIONING
   ACTIVE
+  INACTIVE
   SUSPENDED
-  CLOSED
+}
+
+enum MemberRole {
+  OWNER
+  ADMIN
+  MEMBER
+  VIEWER
 }

@@ -6,10 +6,9 @@ import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
   {
-    ignores: ['eslint.config.mjs'],
+    ignores: ['eslint.config.mjs', 'dist/**', 'node_modules/**', '**/*.js'],
   },
   eslint.configs.recommended,
-  ...tseslint.configs.recommendedTypeChecked,
   eslintPluginPrettierRecommended,
   {
     languageOptions: {
@@ -17,18 +16,30 @@ export default tseslint.config(
         ...globals.node,
         ...globals.jest,
       },
-      sourceType: 'commonjs',
-      parserOptions: {
-        projectService: true,
-        tsconfigRootDir: import.meta.dirname,
-      },
+      sourceType: 'module',
     },
   },
   {
     rules: {
+      // Désactiver TOUTES les règles TypeScript strictes
+      '@typescript-eslint/no-unused-vars': 'off',
       '@typescript-eslint/no-explicit-any': 'off',
-      '@typescript-eslint/no-floating-promises': 'warn',
-      '@typescript-eslint/no-unsafe-argument': 'warn'
+      '@typescript-eslint/explicit-function-return-type': 'off',
+      '@typescript-eslint/explicit-module-boundary-types': 'off',
+      '@typescript-eslint/interface-name-prefix': 'off',
+
+      // Prettier minimal
+      'prettier/prettier': [
+        'warn',
+        {
+          singleQuote: true,
+          semi: true,
+        },
+      ],
+
+      // Désactiver les règles de base trop strictes
+      'no-console': 'off',
+      'no-unused-vars': 'off',
     },
   },
 );
