@@ -38,12 +38,18 @@ export class TenantJwtGuard implements CanActivate {
         audience: this.config.get<string>('JWT_AUDIENCE'),
       });
 
-      const tenantSlug =
-        (request.headers['x-tenant'] as string) ||
-        (request.headers['tenant'] as string) ||
-        request.tenantSlug;
+      // ✅ CORRECTION: Harmoniser l'extraction du tenant slug
+      const tenantSlug = this.extractTenantSlug(request);
 
       if (!tenantSlug) {
+        this.logger.warn('Missing tenant header in JWT guard', {
+          headers: {
+            'x-tenant-slug': request.headers['x-tenant-slug'],
+            'x-tenant': request.headers['x-tenant'],
+            tenant: request.headers['tenant'],
+          },
+          user: payload.sub,
+        });
         throw new UnauthorizedException('Tenant header required');
       }
 
@@ -55,6 +61,10 @@ export class TenantJwtGuard implements CanActivate {
       if (!hasAccessToTenant) {
         this.logger.warn(
           `Access denied to tenant ${tenantSlug} for user ${payload.sub}`,
+          {
+            userMemberships: payload.memberships?.map((m: any) => m.tenantSlug),
+            requestedTenant: tenantSlug,
+          },
         );
         throw new ForbiddenException('Access denied to this tenant');
       }
@@ -111,6 +121,10 @@ export class TenantJwtGuard implements CanActivate {
       request.userRole = membership.role;
       request.sessionId = session.id;
 
+      this.logger.debug(
+        `User ${payload.email} authenticated for tenant ${tenantSlug}`,
+      );
+
       return true;
     } catch (error) {
       this.logger.error('Token validation failed', {
@@ -128,6 +142,16 @@ export class TenantJwtGuard implements CanActivate {
 
       throw new UnauthorizedException('Invalid token');
     }
+  }
+
+  // ✅  Extraction cohérente du tenant slug
+  private extractTenantSlug(request: Request): string | undefined {
+    return (
+      (request.headers['x-tenant-slug'] as string) || // ✅ Header principal
+      (request.headers['x-tenant'] as string) || // ✅ Header alternatif
+      (request.headers['tenant'] as string) || // ✅ Header simple
+      request.tenantSlug // ✅ Depuis middleware
+    );
   }
 
   private extractTokenFromHeader(request: Request): string | undefined {

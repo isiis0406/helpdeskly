@@ -1,3 +1,4 @@
+import { TicketPriority, TicketStatus } from '.prisma/tenant'; // ✅ Import Prisma
 import {
   BadRequestException,
   Injectable,
@@ -11,8 +12,8 @@ import { CreateTicketDto } from './dto/create-ticket.dto';
 export interface UpdateTicketDto {
   title?: string;
   description?: string;
-  status?: 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED';
-  priority?: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
+  status?: TicketStatus;
+  priority?: TicketPriority;
   assignedToId?: string;
 }
 

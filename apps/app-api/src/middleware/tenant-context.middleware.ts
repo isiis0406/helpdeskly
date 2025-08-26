@@ -5,13 +5,17 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { NextFunction, Request, Response } from 'express';
+import { TenantClientFactory } from '../prisma/tenant-prisma.factory'; // ✅ AJOUT
 import { TenantResolutionService } from '../services/tenant-resolution.service';
 
 @Injectable()
 export class TenantContextMiddleware implements NestMiddleware {
   private readonly logger = new Logger(TenantContextMiddleware.name);
 
-  constructor(private readonly tenantResolution: TenantResolutionService) {}
+  constructor(
+    private readonly tenantResolution: TenantResolutionService,
+    private readonly tenantClientFactory: TenantClientFactory, // ✅ INJECTION
+  ) {}
 
   async use(req: Request, res: Response, next: NextFunction): Promise<void> {
     const startTime = Date.now();
@@ -22,15 +26,28 @@ export class TenantContextMiddleware implements NestMiddleware {
         return next();
       }
 
-      // Vérifier la présence du header tenant
       const tenantSlug = this.extractTenantSlug(req);
       if (!tenantSlug) {
+        this.logger.warn('Missing tenant header', {
+          headers: {
+            'x-tenant-slug': req.headers['x-tenant-slug'],
+            'x-tenant': req.headers['x-tenant'],
+            tenant: req.headers['tenant'],
+          },
+          path: req.path,
+        });
         throw new UnauthorizedException('Tenant header required');
       }
 
       // Résolution complète du tenant avec CLS
       const tenantContext =
         await this.tenantResolution.resolveTenantFromRequest(req);
+
+      // ✅ AJOUT: Pré-créer le client Prisma et le mettre en cache
+      await this.tenantClientFactory.getClient(
+        tenantContext.id,
+        tenantContext.dbConfig,
+      );
 
       // Ajouter au contexte de la requête
       req.tenantContext = {
@@ -42,7 +59,7 @@ export class TenantContextMiddleware implements NestMiddleware {
 
       const resolveTime = Date.now() - startTime;
       this.logger.debug(
-        `Tenant resolved: ${tenantContext.slug} (${resolveTime}ms) for ${req.method} ${req.path}`,
+        `Tenant resolved and client cached: ${tenantContext.slug} (${resolveTime}ms) for ${req.method} ${req.path}`,
       );
 
       next();
@@ -54,23 +71,28 @@ export class TenantContextMiddleware implements NestMiddleware {
         {
           ip: req.ip,
           userAgent: req.headers['user-agent'],
-          tenantSlug: req.headers['x-tenant'],
+          headers: {
+            'x-tenant-slug': req.headers['x-tenant-slug'],
+            'x-tenant': req.headers['x-tenant'],
+          },
         },
       );
       next(error);
     }
   }
 
+  // ✅ Harmoniser les noms de headers
   private extractTenantSlug(req: Request): string | undefined {
     return (
-      (req.headers['x-tenant'] as string) ||
-      (req.headers['tenant'] as string) ||
-      req.subdomains[0]
+      (req.headers['x-tenant-slug'] as string) || // ✅ Header principal de Swagger
+      (req.headers['x-tenant'] as string) || // ✅ Header alternatif
+      (req.headers['tenant'] as string) || // ✅ Header simple
+      req.subdomains[0] // ✅ Fallback sous-domaine
     );
   }
 
   private isPublicRoute(path: string): boolean {
-    const publicRoutes = ['/health', '/metrics', '/api-docs', '/favicon.ico'];
+    const publicRoutes = ['/health', '/metrics', '/api', '/favicon.ico'];
     return publicRoutes.some((route) => path.startsWith(route));
   }
 }
