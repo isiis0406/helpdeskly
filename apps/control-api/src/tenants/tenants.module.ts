@@ -3,6 +3,9 @@ import { PrismaClient as ControlPrismaClient } from '.prisma/control';
 import { BullModule } from '@nestjs/bullmq';
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { JwtService } from '@nestjs/jwt';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { ControlPrismaService } from 'src/prisma/control-prisma.service';
 import { TenantsController } from './tenants.controller';
 import { TenantsService } from './tenants.service';
 
@@ -17,6 +20,9 @@ import { TenantsService } from './tenants.service';
   controllers: [TenantsController],
   providers: [
     TenantsService,
+    JwtService,
+    JwtAuthGuard,
+    ControlPrismaService,
     {
       provide: ControlPrismaClient,
       useFactory: () => new ControlPrismaClient(),

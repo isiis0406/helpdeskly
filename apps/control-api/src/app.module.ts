@@ -4,9 +4,12 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { AuthModule } from './auth/auth.module';
+import { HealthController } from './health/health.controller';
+import { HealthModule } from './health/health.module';
+import { ControlPrismaService } from './prisma/control-prisma.service';
 import { ProvisioningModule } from './provisioning/provisioning.module';
 import { TenantsModule } from './tenants/tenants.module';
-import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -29,10 +32,12 @@ import { AuthModule } from './auth/auth.module';
     }),
     TenantsModule,
     ProvisioningModule,
+
     AuthModule,
+    HealthModule,
   ],
   exports: [BullModule],
-  controllers: [AppController],
-  providers: [AppService],
+  controllers: [AppController, HealthController],
+  providers: [AppService, ControlPrismaService],
 })
 export class AppModule {}
