@@ -6,6 +6,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ProvisioningModule } from './provisioning/provisioning.module';
 import { TenantsModule } from './tenants/tenants.module';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { TenantsModule } from './tenants/tenants.module';
     }),
     TenantsModule,
     ProvisioningModule,
+    AuthModule,
   ],
   exports: [BullModule],
   controllers: [AppController],

@@ -7,6 +7,7 @@ import { DatabaseUrlService } from './database-url.service';
 export interface TenantContext {
   id: string;
   slug: string;
+  name?: string;
   dbConfig: {
     url: string;
     poolSize: number;
@@ -19,6 +20,48 @@ export interface TenantContext {
     role: string;
   };
 }
+
+declare global {
+  namespace Express {
+    interface Request {
+      user?: {
+        id: string;
+        email: string;
+        name: string;
+        avatar?: string;
+        permissions: string[];
+        role: string;
+        isActive: boolean;
+      };
+      currentTenant?: {
+        id: string;
+        slug: string;
+        name: string;
+        dbUrl?: string;
+        secretRef?: string;
+      };
+      tenantContext?: {
+        id: string;
+        slug: string;
+        name: string;
+        dbUrl?: string;
+        secretRef?: string;
+      };
+      membership?: {
+        role: string;
+        isActive: boolean;
+        tenantId: string;
+        tenantSlug: string;
+      };
+      tenantId?: string;
+      tenantSlug?: string;
+      userRole?: string;
+      sessionId?: string;
+    }
+  }
+}
+
+export {};
 
 @Injectable()
 export class TenantResolutionService {

@@ -38,7 +38,8 @@ model User {
   name     String
   avatar   String?
   isActive Boolean @default(true)
-
+  password String
+  
   // Relations
   memberships Membership[]
   sessions    Session[]

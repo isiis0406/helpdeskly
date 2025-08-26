@@ -15,6 +15,7 @@ import { TenantClientFactory } from './prisma/tenant-prisma.factory';
 // Modules métier
 import { TicketModule } from './ticket/ticket.module';
 import { UserEnrichmentService } from './user-enrichment/user-enrichment.service';
+import { AuthModule } from './auth/auth.module';
 
 @Global()
 @Module({
@@ -38,6 +39,8 @@ import { UserEnrichmentService } from './user-enrichment/user-enrichment.service
 
     // Modules métier
     TicketModule,
+
+    AuthModule,
   ],
 
   providers: [

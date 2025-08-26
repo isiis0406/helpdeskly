@@ -45,3 +45,6 @@ echo "   1. Create seed data for users and memberships"
 echo "   2. Test tenant resolution with new middleware"
 echo "   3. Update API endpoints to use new architecture"
 echo "   4. Configure monitoring and metrics"
+
+#Studio
+pnpm exec prisma studio --schema=prisma/control/schema.prisma
