@@ -4,6 +4,7 @@ import { BullModule } from '@nestjs/bullmq';
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
+import { AuthService } from 'src/auth/auth.service';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { ControlPrismaService } from 'src/prisma/control-prisma.service';
 import { TenantsController } from './tenants.controller';
@@ -13,6 +14,7 @@ import { TenantsService } from './tenants.service';
 @Module({
   imports: [
     ConfigModule,
+
     BullModule.registerQueue({
       name: 'provisioning',
     }),
@@ -23,6 +25,7 @@ import { TenantsService } from './tenants.service';
     JwtService,
     JwtAuthGuard,
     ControlPrismaService,
+    AuthService,
     {
       provide: ControlPrismaClient,
       useFactory: () => new ControlPrismaClient(),

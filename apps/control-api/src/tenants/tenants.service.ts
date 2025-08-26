@@ -1,5 +1,7 @@
 import { PrismaClient as ControlPrismaClient } from '.prisma/control';
 import { InjectQueue } from '@nestjs/bullmq';
+import * as bcrypt from 'bcrypt';
+
 import {
   BadRequestException,
   ConflictException,
@@ -9,7 +11,9 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { Queue } from 'bull';
 import { addDays } from 'date-fns';
+import { AuthService } from 'src/auth/auth.service';
 import { CreateTenantDto } from './dto/create-tenant.dto';
+import { TenantSignupDto } from './dto/tenant-signup.dto';
 
 @Injectable()
 export class TenantsService {
@@ -18,6 +22,7 @@ export class TenantsService {
   constructor(
     private readonly prisma: ControlPrismaClient,
     private readonly config: ConfigService,
+    private readonly authService: AuthService,
 
     @InjectQueue('provisioning') private readonly queue: Queue,
   ) {}
@@ -73,6 +78,111 @@ export class TenantsService {
     };
   }
 
+  /**
+   * ✅ NOUVELLE: Inscription SaaS complète (tenant + admin + auth)
+   * Réutilise createTenant() + ajoute création admin
+   */
+  async signupTenant(
+    signupDto: TenantSignupDto,
+    metadata: { ip: string; userAgent: string },
+  ) {
+    const {
+      adminName,
+      adminEmail,
+      adminPassword,
+      acceptTerms,
+      ...tenantData // ✅ Réutilise toutes les données de CreateTenantDto
+    } = signupDto;
+
+    // Validations préliminaires
+    if (!acceptTerms) {
+      throw new BadRequestException('Terms acceptance required');
+    }
+
+    // Vérifier que l'email admin n'existe pas
+    const existingUser = await this.prisma.user.findUnique({
+      where: { email: adminEmail },
+    });
+    if (existingUser) {
+      throw new ConflictException('User with this email already exists');
+    }
+
+    // ✅ RÉUTILISER: Créer le tenant avec la logique existante
+    const tenant = await this.createTenant(tenantData);
+
+    // Transaction pour créer l'admin et le membership
+    const admin = await this.prisma.$transaction(async (tx) => {
+      // Hasher le mot de passe
+      const hashedPassword = await bcrypt.hash(adminPassword, 12);
+
+      // Créer l'utilisateur admin
+      const user = await tx.user.create({
+        data: {
+          email: adminEmail,
+          password: hashedPassword,
+          name: adminName,
+          isActive: true,
+          //  emailVerified: true, // Auto-vérifié pour simplifier l'onboarding
+        },
+      });
+
+      // Créer le membership OWNER
+      await tx.membership.create({
+        data: {
+          userId: user.id,
+          tenantId: tenant.id,
+          role: 'OWNER',
+          isActive: true,
+        },
+      });
+
+      return user;
+    });
+
+    // ✅ Générer les tokens d'authentification
+    const tokens = await this.authService.generateTokens(
+      admin.id,
+      tenant.id, // currentTenantId
+      metadata, // securityContext
+    );
+
+    // Enregistrer la session
+    await this.authService.createSession(
+      admin.id,
+      tenant.id,
+      metadata.userAgent,
+      metadata.ip,
+    );
+
+    // TODO: Email de bienvenue (async)
+    // this.emailService.sendWelcomeEmail(admin.email, { ... });
+
+    return {
+      tenant: {
+        id: tenant.id,
+        slug: tenant.slug,
+        name: tenant.name,
+        status: tenant.status,
+        trialEndsAt: tenant.trialEndsAt,
+        url: tenant.url,
+      },
+      admin: {
+        id: admin.id,
+        name: admin.name,
+        email: admin.email,
+        role: 'OWNER',
+      },
+      tokens,
+      onboarding: {
+        nextSteps: [
+          'Personnaliser votre workspace',
+          'Inviter votre équipe',
+          'Configurer les catégories de tickets',
+        ],
+      },
+    };
+  }
+
   async findAll() {
     return this.prisma.tenant.findMany({
       select: {
@@ -103,6 +213,77 @@ export class TenantsService {
       },
       orderBy: { createdAt: 'desc' },
     });
+  }
+
+  /**
+   * Récupère les tenants d'un utilisateur spécifique
+   */
+  async findTenantsForUser(userId: string) {
+    const memberships = await this.prisma.membership.findMany({
+      where: {
+        userId,
+        isActive: true,
+      },
+      include: {
+        tenant: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            status: true,
+            trialEndsAt: true,
+            createdAt: true,
+            updatedAt: true,
+            // Exclure les infos sensibles comme dbUrl
+          },
+        },
+      },
+    });
+
+    return memberships.map((membership) => ({
+      ...membership.tenant,
+      role: membership.role, // Ajouter le rôle de l'utilisateur
+      memberSince: membership.createdAt,
+    }));
+  }
+
+  /**
+   * Vérifie si un utilisateur peut accéder à un tenant
+   */
+  async canUserAccessTenant(
+    userId: string,
+    tenantId: string,
+  ): Promise<boolean> {
+    const membership = await this.prisma.membership.findFirst({
+      where: {
+        userId,
+        tenantId,
+        isActive: true,
+      },
+    });
+
+    return !!membership;
+  }
+
+  /**
+   * Vérifie si un utilisateur peut gérer un tenant
+   */
+  async canUserManageTenant(
+    userId: string,
+    tenantId: string,
+  ): Promise<boolean> {
+    const membership = await this.prisma.membership.findFirst({
+      where: {
+        userId,
+        tenantId,
+        isActive: true,
+        role: {
+          in: ['OWNER', 'ADMIN'],
+        },
+      },
+    });
+
+    return !!membership;
   }
 
   async findOne(id: string) {

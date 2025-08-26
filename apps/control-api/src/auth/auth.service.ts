@@ -31,7 +31,7 @@ interface AccessTokenPayload {
   }>;
   sessionId: string;
   iat: number;
-  exp: number;
+  exp?: number;
   jti: string;
 }
 
@@ -310,13 +310,39 @@ export class AuthService {
     this.logger.log(`All sessions revoked for user: ${userId}`);
   }
 
+  async createSession(
+    userId: string,
+    tenantId: string,
+    userAgent: string,
+    ipAddress: string,
+  ): Promise<string> {
+    const jti = randomBytes(16).toString('hex');
+    const expiresAt = new Date();
+    expiresAt.setDate(
+      expiresAt.getDate() + this.config.get<number>('REFRESH_TOKEN_DAYS', 7),
+    );
+
+    const session = await this.prisma.session.create({
+      data: {
+        userId,
+        tenantId,
+        userAgent,
+        ipAddress,
+        accessToken: jti,
+        expiresAt,
+      },
+    });
+
+    return session.id;
+  }
+
   async revokeSession(sessionId: string): Promise<void> {
     await this.prisma.session.delete({
       where: { id: sessionId },
     });
   }
 
-  private async generateTokens(
+  async generateTokens(
     userId: string,
     currentTenantId?: string,
     securityContext?: SecurityContext,
@@ -366,6 +392,7 @@ export class AuthService {
     const now = Math.floor(Date.now() / 1000);
     const expiresIn = this.config.get<number>('JWT_EXPIRES_IN_SECONDS', 900);
 
+    // ✅ CORRECTION: Retirer 'exp' du payload car on utilise 'expiresIn' dans les options
     const accessTokenPayload: AccessTokenPayload = {
       sub: user.id,
       email: user.email,
@@ -383,38 +410,65 @@ export class AuthService {
       sessionId: session.id,
       jti,
       iat: now,
-      exp: now + expiresIn,
+      // ❌ SUPPRIMÉ: exp: now + expiresIn, // Conflit avec expiresIn dans les options
     };
 
-    const accessToken = this.jwtService.sign(accessTokenPayload);
+    // ✅ Récupérer le secret JWT
+    const jwtSecret = this.config.get<string>('JWT_SECRET');
 
-    return {
-      accessToken,
-      refreshToken,
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        avatar: user.avatar ?? undefined,
-        currentTenant: currentTenant
-          ? {
-              id: currentTenant.tenantId,
-              slug: currentTenant.tenant.slug,
-              name: currentTenant.tenant.name ?? '',
-              role: String(currentTenant.role),
-            }
-          : undefined,
-        memberships: user.memberships
-          .filter((m) => m.tenant.status === 'ACTIVE')
-          .map((m) => ({
-            tenantId: m.tenantId,
-            tenantSlug: m.tenant.slug,
-            tenantName: m.tenant.name ?? '',
-            role: String(m.role),
-            isActive: m.isActive,
-          })),
-      },
-      expiresIn,
-    };
+    if (!jwtSecret) {
+      this.logger.error('JWT_SECRET not found in configuration');
+      throw new Error('JWT configuration error - secret not found');
+    }
+
+    try {
+      // ✅ CORRECTION: Utiliser soit 'expiresIn' soit 'exp', pas les deux
+      const accessToken = this.jwtService.sign(accessTokenPayload, {
+        secret: jwtSecret,
+        expiresIn: `${expiresIn}s`, // ✅ Format string avec 's' pour secondes
+        issuer: this.config.get<string>('JWT_ISSUER', 'helpdeskly'),
+        audience: this.config.get<string>('JWT_AUDIENCE', 'helpdeskly-users'),
+      });
+
+      this.logger.debug(
+        `✅ JWT token generated successfully for user ${user.id}`,
+      );
+
+      return {
+        accessToken,
+        refreshToken,
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          avatar: user.avatar ?? undefined,
+          currentTenant: currentTenant
+            ? {
+                id: currentTenant.tenantId,
+                slug: currentTenant.tenant.slug,
+                name: currentTenant.tenant.name ?? '',
+                role: String(currentTenant.role),
+              }
+            : undefined,
+          memberships: user.memberships
+            .filter((m) => m.tenant.status === 'ACTIVE')
+            .map((m) => ({
+              tenantId: m.tenantId,
+              tenantSlug: m.tenant.slug,
+              tenantName: m.tenant.name ?? '',
+              role: String(m.role),
+              isActive: m.isActive,
+            })),
+        },
+        expiresIn,
+      };
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error(`❌ JWT token generation failed: ${errorMessage}`);
+      throw new Error(
+        `Failed to generate authentication tokens: ${errorMessage}`,
+      );
+    }
   }
 }
