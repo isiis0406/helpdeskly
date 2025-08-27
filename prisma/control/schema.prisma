@@ -1,3 +1,7 @@
+// ════════════════════════════════════════════════════════════════
+// 📊 SCHEMA CONTROL DB AVEC FACTURATION
+// ════════════════════════════════════════════════════════════════
+
 generator client {
   provider = "prisma-client-js"
   output   = "../../node_modules/.prisma/control"
@@ -8,22 +12,37 @@ datasource db {
   url      = env("CONTROL_DATABASE_URL")
 }
 
+// ════════════════════════════════════════════════════════════════
+// 🏢 TENANTS (EXISTANT + FACTURATION)
+// ════════════════════════════════════════════════════════════════
+
 model Tenant {
   id   String  @id @default(cuid())
   name String? @default("")
   slug String  @unique
 
-  // NOUVEAU: Approche hybride selon environnement
-  dbUrl     String? // Utilisé en développement (peut être null en prod)
-  secretRef String? // Référence secret manager (prod uniquement)
-  region    String  @default("eu-west-1")
-
+  // Infrastructure (existant)
+  dbUrl         String?
+  secretRef     String?
+  region        String       @default("eu-west-1")
   status        TenantStatus @default(PROVISIONING)
-  trialEndsAt   DateTime?
   schemaVersion Int          @default(1)
 
-  // NOUVEAU: Relations avec utilisateurs centralisés
+  // 💳 FACTURATION - Nouveau
+  stripeCustomerId String? @unique
+  billingEmail     String?
+
+  // Essai gratuit
+  trialEndsAt DateTime?
+  isTrialing  Boolean   @default(true)
+
+  // Relations existantes
   memberships Membership[]
+
+  // 💳 Relations facturation - Nouveau
+  subscription Subscription?
+  invoices     Invoice[]
+  usageRecords UsageRecord[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -31,7 +50,10 @@ model Tenant {
   @@map("tenants")
 }
 
-// Utilisateurs centralisés (plus de duplication)
+// ════════════════════════════════════════════════════════════════
+// 👥 USERS (EXISTANT - INCHANGÉ)
+// ════════════════════════════════════════════════════════════════
+
 model User {
   id       String  @id @default(cuid())
   email    String  @unique
@@ -39,8 +61,7 @@ model User {
   avatar   String?
   isActive Boolean @default(true)
   password String
-  
-  // Relations
+
   memberships Membership[]
   sessions    Session[]
 
@@ -50,7 +71,6 @@ model User {
   @@map("users")
 }
 
-// Appartenance multi-tenant
 model Membership {
   id       String     @id @default(cuid())
   userId   String
@@ -58,7 +78,6 @@ model Membership {
   role     MemberRole @default(MEMBER)
   isActive Boolean    @default(true)
 
-  // Relations
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
@@ -69,18 +88,16 @@ model Membership {
   @@map("memberships")
 }
 
-// Sessions avec workspace courant
 model Session {
   id           String   @id @default(cuid())
   userId       String
-  tenantId     String? // Workspace courant (optionnel)
+  tenantId     String?
   accessToken  String   @unique
   refreshToken String?  @unique
   expiresAt    DateTime
   userAgent    String?
   ipAddress    String?
 
-  // Relations
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
@@ -89,11 +106,157 @@ model Session {
   @@map("sessions")
 }
 
+// ════════════════════════════════════════════════════════════════
+// 💳 FACTURATION - NOUVEAU
+// ════════════════════════════════════════════════════════════════
+
+model Plan {
+  id          String @id @default(cuid())
+  name        String @unique // "starter", "professional", "enterprise"
+  displayName String // "Starter", "Professional", "Enterprise"
+  description String
+  features    Json // Array des fonctionnalités
+
+  // Pricing
+  priceMonthly Decimal  @db.Decimal(10, 2)
+  priceYearly  Decimal? @db.Decimal(10, 2)
+  currency     String   @default("EUR")
+
+  // Limites
+  maxUsers    Int @default(5)
+  maxTickets  Int @default(1000) // -1 = illimité
+  maxStorage  Int @default(1000) // MB
+  maxApiCalls Int @default(10000) // par mois
+
+  // Stripe
+  stripePriceIdMonthly String?
+  stripePriceIdYearly  String?
+  stripeProductId      String?
+
+  // Status
+  isActive  Boolean @default(true)
+  isPopular Boolean @default(false)
+  sortOrder Int     @default(0)
+
+  // Relations
+  subscriptions Subscription[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("plans")
+}
+
+model Subscription {
+  id       String @id @default(cuid())
+  tenantId String @unique // One subscription per tenant
+  planId   String
+
+  // Stripe
+  stripeSubscriptionId String? @unique
+  stripePriceId        String?
+
+  // Status
+  status       SubscriptionStatus @default(ACTIVE)
+  billingCycle BillingCycle       @default(MONTHLY)
+
+  // Dates
+  startDate    DateTime  @default(now())
+  endDate      DateTime?
+  trialEndDate DateTime?
+  canceledAt   DateTime?
+  cancelReason String?
+
+  // Pricing
+  amount   Decimal @db.Decimal(10, 2)
+  currency String  @default("EUR")
+
+  // Relations
+  tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  plan     Plan      @relation(fields: [planId], references: [id])
+  invoices Invoice[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("subscriptions")
+}
+
+model Invoice {
+  id             String  @id @default(cuid())
+  tenantId       String
+  subscriptionId String?
+
+  // Stripe
+  stripeInvoiceId String? @unique
+
+  // Invoice details
+  invoiceNumber String  @unique
+  amount        Decimal @db.Decimal(10, 2)
+  tax           Decimal @default(0) @db.Decimal(10, 2)
+  totalAmount   Decimal @db.Decimal(10, 2)
+  currency      String  @default("EUR")
+
+  // Status
+  status InvoiceStatus @default(PENDING)
+
+  // Dates
+  issueDate DateTime  @default(now())
+  dueDate   DateTime
+  paidDate  DateTime?
+
+  // Billing period
+  periodStart DateTime
+  periodEnd   DateTime
+
+  // Relations
+  tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  subscription Subscription? @relation(fields: [subscriptionId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("invoices")
+}
+
+// ════════════════════════════════════════════════════════════════
+// 📊 USAGE TRACKING
+// ════════════════════════════════════════════════════════════════
+
+model UsageRecord {
+  id       String @id @default(cuid())
+  tenantId String
+
+  // Metrics
+  metricType    UsageMetricType
+  value         Int
+  previousValue Int             @default(0)
+
+  // Time tracking
+  recordedAt    DateTime @default(now())
+  recordedMonth Int // Pour grouper par mois
+  recordedYear  Int // Pour grouper par année
+
+  // Metadata
+  metadata Json?
+
+  // Relations
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, metricType, recordedMonth, recordedYear])
+  @@map("usage_records")
+}
+
+// ════════════════════════════════════════════════════════════════
+// 📊 ENUMS
+// ════════════════════════════════════════════════════════════════
+
 enum TenantStatus {
   PROVISIONING
   ACTIVE
   INACTIVE
   SUSPENDED
+  DELETED
 }
 
 enum MemberRole {
@@ -101,4 +264,35 @@ enum MemberRole {
   ADMIN
   MEMBER
   VIEWER
+}
+
+enum SubscriptionStatus {
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  UNPAID
+  INCOMPLETE
+  INCOMPLETE_EXPIRED
+}
+
+enum BillingCycle {
+  MONTHLY
+  YEARLY
+}
+
+enum InvoiceStatus {
+  PENDING
+  PAID
+  OVERDUE
+  CANCELED
+  REFUNDED
+}
+
+enum UsageMetricType {
+  USERS
+  TICKETS
+  STORAGE
+  API_CALLS
+  COMMENTS
 }

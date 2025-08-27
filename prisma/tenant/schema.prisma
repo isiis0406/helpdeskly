@@ -1,3 +1,7 @@
+// ════════════════════════════════════════════════════════════════
+// 📊 SCHEMA TENANT DB AVEC USAGE EVENTS
+// ════════════════════════════════════════════════════════════════
+
 generator client {
   provider = "prisma-client-js"
   output   = "../../node_modules/.prisma/tenant"
@@ -8,6 +12,10 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ════════════════════════════════════════════════════════════════
+// 🎫 DONNÉES MÉTIER (EXISTANT - INCHANGÉ)
+// ════════════════════════════════════════════════════════════════
+
 model Ticket {
   id          String         @id @default(cuid())
   title       String
@@ -15,12 +23,13 @@ model Ticket {
   status      TicketStatus   @default(OPEN)
   priority    TicketPriority @default(MEDIUM)
 
-  // CHANGEMENT: Référence vers User central (ID seulement)
   authorId     String // User ID de la DB control
   assignedToId String? // User ID de la DB control
 
-  // Relations locales uniquement
   comments Comment[]
+
+  // 📊 Usage tracking - Nouveau
+  usageEvents UsageEvent[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -34,14 +43,54 @@ model Comment {
   ticketId String
   authorId String // User ID de la DB control
 
-  // Relations
   ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  // 📊 Usage tracking - Nouveau
+  usageEvents UsageEvent[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@map("comments")
 }
+
+// ════════════════════════════════════════════════════════════════
+// 📊 USAGE EVENTS (NOUVEAU)
+// ════════════════════════════════════════════════════════════════
+
+model UsageEvent {
+  id String @id @default(cuid())
+
+  // Event details
+  eventType  UsageEventType
+  entityType EntityType
+  entityId   String
+
+  // Metrics
+  incrementValue Int @default(1) // Combien on ajoute
+
+  // User context
+  userId String // User qui a déclenché l'action
+
+  // Relations optionnelles
+  ticketId  String?
+  commentId String?
+
+  ticket  Ticket?  @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  comment Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  // Sync status
+  syncedToControl Boolean   @default(false)
+  syncedAt        DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@map("usage_events")
+}
+
+// ════════════════════════════════════════════════════════════════
+// 📊 ENUMS
+// ════════════════════════════════════════════════════════════════
 
 enum TicketStatus {
   OPEN
@@ -55,4 +104,20 @@ enum TicketPriority {
   MEDIUM
   HIGH
   URGENT
+}
+
+enum UsageEventType {
+  CREATE
+  UPDATE
+  DELETE
+  VIEW
+  EXPORT
+}
+
+enum EntityType {
+  TICKET
+  COMMENT
+  USER
+  ATTACHMENT
+  API_CALL
 }
