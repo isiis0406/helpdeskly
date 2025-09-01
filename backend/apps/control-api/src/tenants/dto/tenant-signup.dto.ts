@@ -1,5 +1,5 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsNotEmpty, IsString, MinLength } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsBoolean, IsEmail, IsNotEmpty, IsOptional, IsString, MinLength } from 'class-validator';
 import { CreateTenantDto } from './create-tenant.dto';
 
 export class TenantSignupDto extends CreateTenantDto {
@@ -36,4 +36,13 @@ export class TenantSignupDto extends CreateTenantDto {
   })
   @IsNotEmpty()
   acceptTerms!: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Inclure des données de démonstration (tickets, commentaires)',
+    example: true,
+    default: false,
+  })
+  @IsOptional()
+  @IsBoolean()
+  withDemoData?: boolean;
 }

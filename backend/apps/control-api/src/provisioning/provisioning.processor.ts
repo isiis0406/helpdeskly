@@ -29,7 +29,7 @@ export class ProvisioningProcessor extends WorkerHost {
   }
 
   async process(
-    job: Job<{ tenantId: string; slug: string; name: string }>,
+    job: Job<{ tenantId: string; slug: string; name: string; includeDemoData?: boolean }>,
   ): Promise<void> {
     if (job.name !== 'provision-tenant') {
       return;
@@ -70,7 +70,7 @@ export class ProvisioningProcessor extends WorkerHost {
         dbUrl || (await this.getConnectionFromSecret(secretRef!));
 
       await this.migrator.runMigrations(connectionUrl);
-      await this.migrator.seedDatabase(connectionUrl, { name });
+      await this.migrator.seedDatabase(connectionUrl, { name, slug }, !!job.data.includeDemoData);
 
       const isConnected =
         await this.migrator.checkDatabaseConnection(connectionUrl);

@@ -1,5 +1,5 @@
 {
-  "name": "helpdeskly",
+  "name": "backend",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -11,7 +11,18 @@
   "scripts": {
     "dev:control": "pnpm --filter control-api start:dev",
     "dev:app": "pnpm --filter app-api start:dev",
-    "dev": "concurrently \"pnpm dev:control\" \"pnpm dev:app\""
+    "dev": "concurrently \"pnpm dev:control\" \"pnpm dev:app\"",
+    "seed:plans": "ts-node scripts/seed-plans.ts",
+    "prisma:generate:control": "prisma generate --schema prisma/control/schema.prisma",
+    "prisma:generate:tenant": "prisma generate --schema prisma/tenant/schema.prisma",
+    "prisma:generate:all": "pnpm prisma:generate:control && pnpm prisma:generate:tenant",
+    "db:seed:control": "prisma db seed --schema prisma/control/schema.prisma",
+    "db:seed:tenant": "ts-node prisma/tenant/seed.ts",
+    "db:seed:all": "pnpm db:seed:control && pnpm db:seed:tenant",
+    "db:studio": "prisma studio --schema prisma/control/schema.prisma"
+  },
+  "prisma": {
+    "seed": "ts-node prisma/control/seed.ts"
   },
   "pnpm": {
     "overrides": {
@@ -33,6 +44,7 @@
   "license": "ISC",
   "packageManager": "pnpm@10.13.1",
   "devDependencies": {
+    "@types/bcrypt": "^6.0.0",
     "@nestjs/cli": "^11.0.7",
     "@prisma/client": "^6.12.0",
     "@types/node": "^24.1.0",
@@ -41,5 +53,8 @@
     "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.8.3"
+  },
+  "dependencies": {
+    "bcrypt": "^6.0.0"
   }
 }

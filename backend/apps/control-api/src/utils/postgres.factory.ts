@@ -1,12 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import * as crypto from 'crypto';
 import { Client } from 'pg';
 
 /**
- * Petit helper qui se connecte en super-utilisateur à Postgres
- * et exécute CREATE DATABASE "tenant_<slug>_<random>".
- * Il retourne ensuite l'URL de connexion à cette nouvelle base.
+ * Helper qui se connecte en super-utilisateur à Postgres
+ * et exécute CREATE DATABASE "<dbName>".
+ * Retourne l'URL de connexion à cette nouvelle base.
  */
 @Injectable()
 export class PostgresFactory {
@@ -22,10 +21,7 @@ export class PostgresFactory {
     }
   }
 
-  async createDatabase(slug: string): Promise<string> {
-    const suffix = crypto.randomBytes(4).toString('hex');
-    const dbName = `tenant_${slug}_${suffix}`;
-
+  async createDatabase(dbName: string): Promise<string> {
     this.logger.log(`Creating database: ${dbName}`);
 
     try {

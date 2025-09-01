@@ -27,7 +27,7 @@ export class TenantsService {
     @InjectQueue('provisioning') private readonly queue: Queue,
   ) {}
 
-  async createTenant(dto: CreateTenantDto) {
+  async createTenant(dto: CreateTenantDto, includeDemoData: boolean = false) {
     // 🔧 Ces logs DOIVENT apparaître
     console.log('🚀 === SERVICE CALLED ===');
     console.log('🔧 Method createTenant called with:', dto);
@@ -64,6 +64,7 @@ export class TenantsService {
       tenantId: tenant.id,
       slug: tenant.slug,
       name: tenant.name,
+      includeDemoData,
     });
 
     this.logger.log(`Tenant created: ${tenant.slug} (${tenant.id})`);
@@ -108,7 +109,10 @@ export class TenantsService {
     }
 
     // ✅ RÉUTILISER: Créer le tenant avec la logique existante
-    const tenant = await this.createTenant(tenantData);
+    const tenant = await this.createTenant(
+      tenantData,
+      !!signupDto.withDemoData,
+    );
 
     // Transaction pour créer l'admin et le membership
     const admin = await this.prisma.$transaction(async (tx) => {

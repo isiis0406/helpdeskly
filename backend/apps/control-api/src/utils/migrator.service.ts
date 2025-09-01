@@ -72,7 +72,8 @@ export class MigratorService {
 
   async seedDatabase(
     databaseUrl: string,
-    tenantData: { name?: string; slug?: string }, // 🔧 AJOUT : slug manquant
+    tenantData: { name?: string; slug?: string },
+    includeDemoData: boolean = false,
   ): Promise<void> {
     this.logger.log('Seeding tenant database...');
 
@@ -95,6 +96,9 @@ export class MigratorService {
 
       // 🔧 CORRECTION : Await manquant
       await this.createDefaultData(prisma, tenantData);
+      if (includeDemoData) {
+        await this.createDemoData(prisma, tenantData);
+      }
 
       await prisma.$disconnect();
       this.logger.log('Database seeding completed');
@@ -137,6 +141,73 @@ export class MigratorService {
         errorMessage,
       );
       // Ne pas faire échouer le provisioning pour les données par défaut
+    }
+  }
+
+  // Données de démonstration plus riches
+  private async createDemoData(
+    prisma: any,
+    tenantData: { name?: string; slug?: string },
+  ): Promise<void> {
+    try {
+      this.logger.log('Creating demo dataset (tickets, comments, usage)...')
+
+      const titles = [
+        'Impossible de se connecter',
+        'Erreur 500 sur la page Tickets',
+        'Notification email non reçue',
+        'Export CSV échoue',
+        'Performance lente sur le dashboard',
+        'Problème de permissions utilisateur',
+        "Intégration Slack ne fonctionne pas",
+        'SSO renvoie une erreur',
+        'Taille de fichier trop grande',
+        'API rate limit atteint',
+      ]
+      const desc = [
+        "Lorsque j'essaie de me connecter, le système me renvoie sur la page d'accueil sans message.",
+        'Nous constatons des erreurs 500 intermittentes depuis ce matin.',
+        "Plusieurs utilisateurs n'ont pas reçu de mail de notification.",
+        "L'export CSV retourne un fichier vide.",
+        'Le chargement du dashboard prend parfois plus de 10 secondes.',
+      ]
+
+      const statusValues = ['OPEN', 'IN_PROGRESS', 'RESOLVED'] as const
+      const priorityValues = ['LOW', 'MEDIUM', 'HIGH'] as const
+
+      const n = 12
+      for (let i = 0; i < n; i++) {
+        const t = await prisma.ticket.create({
+          data: {
+            title: titles[i % titles.length],
+            description: desc[i % desc.length],
+            status: statusValues[i % statusValues.length],
+            priority: priorityValues[(i + 1) % priorityValues.length],
+            authorId: 'user_demo_author',
+            assignedToId: i % 2 === 0 ? 'user_demo_agent' : null,
+          },
+        })
+
+        const comments = Math.floor(Math.random() * 3)
+        for (let j = 0; j < comments; j++) {
+          await prisma.comment.create({
+            data: {
+              body:
+                j % 2 === 0
+                  ? 'Nous investiguons le problème.'
+                  : 'Le correctif est en cours de déploiement.',
+              ticketId: t.id,
+              authorId: j % 2 === 0 ? 'user_demo_agent' : 'user_demo_author',
+            },
+          })
+        }
+      }
+
+      this.logger.log('Demo dataset created')
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error)
+      this.logger.warn('Failed to create demo dataset', errorMessage)
     }
   }
 
