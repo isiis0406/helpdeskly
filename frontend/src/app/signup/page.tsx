@@ -1,5 +1,5 @@
 "use client";
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { signupTenantAction } from "@/app/actions/tenants";
@@ -57,6 +57,14 @@ export default function SignupPage() {
       .replace(/^-+|-+$/g, "");
   }
 
+  useEffect(() => {
+    const current = watch("slug");
+    const tn = watch("tenantName");
+    if (!current && tn) {
+      setValue("slug", suggestSlugFromName(tn), { shouldValidate: true });
+    }
+  }, [watch("tenantName")]);
+
   return (
     <main className="container mx-auto px-6 py-10 max-w-3xl">
       <h1 className="text-3xl font-semibold mb-6">
@@ -76,13 +84,7 @@ export default function SignupPage() {
           <input
             className="w-full border rounded px-3 py-2"
             {...register("tenantName")}
-            onBlur={() => {
-              const current = watch("slug");
-              if (!current)
-                setValue("slug", suggestSlugFromName(tenantName || ""), {
-                  shouldValidate: true,
-                });
-            }}
+            
           />
           {errors.tenantName && (
             <p className="text-sm text-red-600">
@@ -91,22 +93,9 @@ export default function SignupPage() {
           )}
         </div>
 
-        <div>
-          <label className="block text-sm mb-1">Slug</label>
-          <input
-            className="w-full border rounded px-3 py-2 font-mono"
-            placeholder="ma-startup"
-            {...register("slug")}
-          />
-          <p className="text-xs text-gray-500 mt-1">
-            URL: https://<span className="font-mono">votre-slug</span>
-            .helpdeskly.com
-          </p>
-          {errors.slug && (
-            <p className="text-sm text-red-600">
-              {errors.slug.message as string}
-            </p>
-          )}
+        <input type="hidden" {...register("slug")} />
+        <div className="md:col-span-2 text-xs text-gray-500">
+          URL: https://<span className="font-mono">{watch("slug") || "votre-slug"}</span>.helpdeskly.com
         </div>
         <div>
           <label className="block text-sm mb-1">Email administrateur</label>
@@ -162,48 +151,9 @@ export default function SignupPage() {
           )}
         </div>
 
-        <div>
-          <label className="block text-sm mb-1">Logo (URL)</label>
-          <input
-            className="w-full border rounded px-3 py-2"
-            placeholder="https://…"
-            {...register("logo")}
-          />
-          {errors.logo && (
-            <p className="text-sm text-red-600">
-              {errors.logo.message as string}
-            </p>
-          )}
-        </div>
-        <div>
-          <label className="block text-sm mb-1">Domaine personnalisé</label>
-          <input
-            className="w-full border rounded px-3 py-2"
-            placeholder="support.votre-domaine.com"
-            {...register("customDomain")}
-          />
-          {errors.customDomain && (
-            <p className="text-sm text-red-600">
-              {errors.customDomain.message as string}
-            </p>
-          )}
-        </div>
+        {/* v2: logo uploader & domaine provisionné automatiquement côté backend */}
 
-        <div>
-          <label className="block text-sm mb-1">Jours d'essai (1-365)</label>
-          <input
-            className="w-full border rounded px-3 py-2"
-            type="number"
-            min={1}
-            max={365}
-            {...register("trialDays", { valueAsNumber: true })}
-          />
-          {errors.trialDays && (
-            <p className="text-sm text-red-600">
-              {errors.trialDays.message as string}
-            </p>
-          )}
-        </div>
+        {/* Jours d'essai définis par configuration (env côté front et backend) */}
 
         <div className="md:col-span-2 flex items-center gap-2">
           <input type="checkbox" id="terms" {...register("acceptTerms")} />

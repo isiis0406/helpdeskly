@@ -1,5 +1,8 @@
+import TenantMenu from "@/components/tenant-menu";
+import { ThemeToggle } from "@/components/theme-toggle";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import Link from "next/link";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -28,16 +31,25 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <header className="border-b bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60">
-              <div className="container mx-auto px-6 h-14 flex items-center justify-between">
-                <Link href="/" className="font-semibold">Helpdeskly</Link>
-                <nav className="flex items-center gap-4 text-sm">
-                  <Link href="/dashboard" className="hover:underline">Dashboard</Link>
-                  <Link href="/billing/plan" className="hover:underline">Mon plan</Link>
-                </nav>
-                <div className="hidden md:block"><TenantPicker initial={tenantSlug} /></div>
-              </div>
-            </header>
-            {children}
+          <div className="container mx-auto px-6 h-14 flex items-center justify-between">
+            <Link href="/" className="font-semibold">
+              Helpdeskly
+            </Link>
+            <nav className="flex items-center gap-4 text-sm">
+              <Link href="/dashboard" className="hover:underline">
+                Dashboard
+              </Link>
+              <Link href="/billing/plan" className="hover:underline">
+                Mon plan
+              </Link>
+            </nav>
+            <div className="hidden md:flex items-center gap-3">
+              <ThemeToggle />
+              <TenantMenu />
+            </div>
+          </div>
+        </header>
+        {children}
       </body>
     </html>
   );

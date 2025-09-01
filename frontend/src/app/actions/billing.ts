@@ -2,7 +2,7 @@
 import { apiFetchServer } from '@/lib/api-server'
 import { z } from 'zod'
 
-export const SubscriptionSchema = z.object({
+const SubscriptionSchema = z.object({
   id: z.string(),
   status: z.string(),
   billingCycle: z.string().optional(),
