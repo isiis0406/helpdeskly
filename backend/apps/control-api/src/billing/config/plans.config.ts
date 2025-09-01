@@ -40,6 +40,36 @@ export interface PlanConfig {
 
 export const PLANS_CONFIG: PlanConfig[] = [
   {
+    id: 'free',
+    name: 'free',
+    displayName: 'Free',
+    description: 'Gratuit pour démarrer et évaluer le produit',
+    priceMonthly: 0,
+    priceYearly: 0,
+    currency: 'EUR',
+    limits: {
+      users: 2,
+      tickets: 200,
+      storage: 200, // 200MB
+      apiCalls: 2000,
+      comments: 1000,
+    },
+    stripe: {
+      productId: 'prod_free_helpdeskly',
+      priceIdMonthly: 'price_free_monthly',
+      priceIdYearly: 'price_free_yearly',
+    },
+    isActive: true,
+    sortOrder: 0,
+    features: [
+      { key: 'tickets', name: 'Tickets mensuels', description: '200 tickets par mois', included: true, limit: 200 },
+      { key: 'users', name: 'Utilisateurs', description: "Jusqu'à 2 utilisateurs", included: true, limit: 2 },
+      { key: 'email_support', name: 'Support email', description: 'Support communautaire', included: true },
+      { key: 'api_access', name: 'Accès API', description: 'Accès limité', included: false },
+      { key: 'custom_domain', name: 'Domaine personnalisé', description: 'Non inclus', included: false },
+    ],
+  },
+  {
     id: 'starter',
     name: 'starter',
     displayName: 'Starter',
@@ -275,7 +305,7 @@ export const PLANS_CONFIG: PlanConfig[] = [
 // Configuration globale
 export const BILLING_CONFIG = {
   FREE_TRIAL_DAYS: 14,
-  DEFAULT_PLAN_ID: 'starter',
+  DEFAULT_PLAN_ID: 'free',
   GRACE_PERIOD_DAYS: 3, // Période de grâce après échéance
   CURRENCY: 'EUR',
   TAX_RATE: 0.2, // 20% TVA par défaut

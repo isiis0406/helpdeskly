@@ -12,6 +12,7 @@ import { ConfigService } from '@nestjs/config';
 import { Queue } from 'bull';
 import { addDays } from 'date-fns';
 import { AuthService } from 'src/auth/auth.service';
+import { BILLING_CONFIG } from '../billing/config/plans.config';
 import { CreateTenantDto } from './dto/create-tenant.dto';
 import { TenantSignupDto } from './dto/tenant-signup.dto';
 
@@ -142,6 +143,9 @@ export class TenantsService {
 
       return user;
     });
+
+    // ✅ Créer une subscription par défaut (plan free) si disponible
+    await this.ensureDefaultSubscription(tenant.id);
 
     // ✅ Générer les tokens d'authentification
     const tokens = await this.authService.generateTokens(
@@ -392,6 +396,38 @@ export class TenantsService {
         updatedAt: true,
       },
     });
+  }
+
+  private async ensureDefaultSubscription(tenantId: string) {
+    try {
+      const existing = await this.prisma.subscription.findUnique({ where: { tenantId } });
+      if (existing) return existing;
+
+      const defaultPlanId = BILLING_CONFIG.DEFAULT_PLAN_ID || 'free';
+      const plan = await this.prisma.plan.findUnique({ where: { id: defaultPlanId } });
+      if (!plan) {
+        this.logger.warn(`Default plan '${defaultPlanId}' not found. Skipping default subscription creation.`);
+        return null;
+      }
+
+      const sub = await this.prisma.subscription.create({
+        data: {
+          tenantId,
+          planId: plan.id,
+          status: 'ACTIVE',
+          billingCycle: 'MONTHLY',
+          amount: '0',
+          currency: plan.currency || 'EUR',
+          startDate: new Date(),
+        },
+      });
+
+      this.logger.log(`Default subscription created for tenant ${tenantId} on plan '${plan.id}'.`);
+      return sub;
+    } catch (e) {
+      this.logger.error('Failed to create default subscription', e as any);
+      return null;
+    }
   }
 
   // 🔧 Méthode sécurisée pour générer l'URL tenant
