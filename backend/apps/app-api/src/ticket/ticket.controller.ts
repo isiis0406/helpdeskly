@@ -355,4 +355,29 @@ export class TicketController {
       authorId: req.user.id,
     });
   }
+
+  // ✏️ Modifier un commentaire (auteur uniquement)
+  @Patch(':id/comments/:commentId')
+  @RequirePermissions('comment.update', 'comment.update.own')
+  @ApiOperation({ summary: '✏️ Modifier un commentaire (auteur)' })
+  async updateComment(
+    @Param('id') ticketId: string,
+    @Param('commentId') commentId: string,
+    @Body() dto: { body: string },
+    @Request() req,
+  ) {
+    return this.ticketService.updateComment(ticketId, commentId, req.user.id, dto.body)
+  }
+
+  // 🗑️ Supprimer un commentaire (auteur uniquement)
+  @Delete(':id/comments/:commentId')
+  @RequirePermissions('comment.delete', 'comment.delete.own')
+  @ApiOperation({ summary: '🗑️ Supprimer un commentaire (auteur)' })
+  async deleteComment(
+    @Param('id') ticketId: string,
+    @Param('commentId') commentId: string,
+    @Request() req,
+  ) {
+    return this.ticketService.deleteComment(ticketId, commentId, req.user.id)
+  }
 }

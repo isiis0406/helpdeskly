@@ -2,6 +2,10 @@ import Link from 'next/link'
 import { revalidatePath } from 'next/cache'
 import { apiGet, apiPost } from '@/lib/app-api'
 import { TicketActionsClient } from './TicketActionsClient'
+import { CommentsClient } from './CommentsClient'
+import { Sidebar } from '@/components/sidebar'
+import { auth } from '@/app/api/auth/[...nextauth]/route'
+import { tStatus, tPriority } from '@/lib/i18n'
 
 type TicketUser = { id: string; name?: string; email?: string }
 type Comment = { id: string; body: string; author?: TicketUser; createdAt: string }
@@ -27,8 +31,12 @@ export default async function TicketDetailPage({ params }: { params: Promise<{ i
   // Rien: le flux de création utilise désormais /tickets/create
   const ticket = await getTicket(id)
   const users = await apiGet<{ id: string; name?: string; email?: string }[]>('/users')
+  const session = await auth()
+  const currentUserId = (session as any)?.user?.id as string | undefined
   return (
-    <div className="p-6 space-y-6">
+    <div className="container mx-auto p-6 grid md:grid-cols-[15rem_1fr] gap-6">
+      <Sidebar />
+      <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <div className="text-xs text-muted-foreground">Ticket</div>
@@ -52,33 +60,18 @@ export default async function TicketDetailPage({ params }: { params: Promise<{ i
           <div className="border border-border rounded p-4 bg-card">
             <h2 className="font-medium mb-3">Commentaires</h2>
             <CommentForm ticketId={ticket.id} />
-            <div className="mt-4 space-y-3">
-              {ticket.comments?.map((c) => (
-                <div key={c.id} className="rounded border border-border p-3 bg-card">
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <Avatar user={c.author} />
-                    <span>{c.author?.name || c.author?.email || 'Utilisateur'}</span>
-                    <span className="text-muted-foreground/70">•</span>
-                    <span>{new Date(c.createdAt).toLocaleString()}</span>
-                  </div>
-                  <div className="text-sm mt-2 whitespace-pre-wrap">{c.body}</div>
-                </div>
-              ))}
-              {(!ticket.comments || ticket.comments.length === 0) && (
-                <div className="text-sm text-muted-foreground">Aucun commentaire</div>
-              )}
-            </div>
+            <CommentsClient ticketId={ticket.id} items={ticket.comments || []} currentUserId={currentUserId} />
           </div>
         </div>
         <div className="space-y-3">
           <div className="border border-border rounded p-4 text-sm bg-card space-y-2">
             <div className="flex items-center gap-2">
               <span className="text-muted-foreground">Statut:</span>
-              <span className="inline-flex items-center rounded-full px-2 py-0.5 bg-platinum text-jet text-xs">{ticket.status}</span>
+              <span className="inline-flex items-center rounded-full px-2 py-0.5 bg-platinum text-jet text-xs">{tStatus(ticket.status)}</span>
             </div>
             <div className="flex items-center gap-2">
               <span className="text-muted-foreground">Priorité:</span>
-              <span className="inline-flex items-center rounded-full px-2 py-0.5 bg-platinum text-jet text-xs">{ticket.priority}</span>
+              <span className="inline-flex items-center rounded-full px-2 py-0.5 bg-platinum text-jet text-xs">{tPriority(ticket.priority)}</span>
             </div>
             <div><span className="text-muted-foreground">Auteur:</span> {ticket.author?.name || ticket.author?.email}</div>
             <div><span className="text-muted-foreground">Assigné à:</span> {ticket.assignedTo?.name || ticket.assignedTo?.email || '-'}</div>
@@ -93,6 +86,7 @@ export default async function TicketDetailPage({ params }: { params: Promise<{ i
             currentPriority={ticket.priority}
           />
         </div>
+      </div>
       </div>
     </div>
   )
