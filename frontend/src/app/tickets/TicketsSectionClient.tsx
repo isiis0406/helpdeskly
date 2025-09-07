@@ -1,0 +1,100 @@
+"use client"
+import { useEffect, useState } from 'react'
+import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
+import { BadgePriority, BadgeStatus } from '@/components/badges'
+import { KanbanClient } from './kanban/KanbanClient'
+
+type Ticket = {
+  id: string
+  ticketNumber?: string
+  title: string
+  status: 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED'
+  priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'
+  createdAt: string
+  assignedTo?: { id: string; name?: string | null; email?: string | null } | null
+}
+type Pagination = { page: number; limit: number; total: number; pages: number }
+
+export function TicketsSectionClient({ items, pagination }: { items: Ticket[]; pagination?: Pagination }) {
+  const [view, setView] = useState<'list'|'kanban'>('list')
+  const sp = useSearchParams()
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('ticketsView') as 'list'|'kanban'|null
+      if (stored) setView(stored)
+    } catch {}
+    const handler = (e: Event) => {
+      try {
+        const v = (e as CustomEvent).detail as 'list'|'kanban' | undefined
+        if (v === 'list' || v === 'kanban') setView(v)
+        else {
+          const stored = localStorage.getItem('ticketsView') as 'list'|'kanban'|null
+          if (stored) setView(stored)
+        }
+      } catch {}
+    }
+    window.addEventListener('tickets:view-changed', handler as any)
+    return () => window.removeEventListener('tickets:view-changed', handler as any)
+  }, [])
+
+  return (
+    <div className="space-y-3">
+      {view === 'kanban' ? (
+        <KanbanClient items={items} />
+      ) : (
+        <div className="overflow-x-auto bg-card border border-border rounded">
+          <table className="w-full text-sm">
+            <thead className="text-left text-muted-foreground">
+              <tr className="border-b border-border">
+                <th className="px-3 py-2">Ticket</th>
+                <th className="px-3 py-2">Statut</th>
+                <th className="px-3 py-2">Priorité</th>
+                <th className="px-3 py-2">Assigné à</th>
+                <th className="px-3 py-2">Créé</th>
+              </tr>
+            </thead>
+            <tbody>
+              {items.length > 0 ? items.map((t) => (
+                <tr key={t.id} className="border-b border-border hover:bg-muted/40">
+                  <td className="px-3 py-2">
+                    <Link className="text-accent underline-offset-4 hover:underline" href={`/tickets/${t.id}`}>
+                      {(t.ticketNumber ? `${t.ticketNumber} — ` : '') + t.title}
+                    </Link>
+                  </td>
+                  <td className="px-3 py-2"><BadgeStatus value={t.status} /></td>
+                  <td className="px-3 py-2"><BadgePriority value={t.priority} /></td>
+                  <td className="px-3 py-2">{t.assignedTo?.name || t.assignedTo?.email || '-'}</td>
+                  <td className="px-3 py-2">{new Date(t.createdAt).toLocaleString()}</td>
+                </tr>
+              )) : (
+                <tr>
+                  <td className="px-3 py-4 text-muted-foreground" colSpan={5}>Aucun ticket trouvé</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {view === 'list' && pagination && (
+        <div className="flex items-center justify-between text-sm">
+          <PageLink sp={sp} page={Math.max(1, (pagination.page || 1) - 1)} disabled={pagination.page <= 1}>Précédent</PageLink>
+          <div className="text-muted-foreground">Page {pagination.page} / {pagination.pages}</div>
+          <PageLink sp={sp} page={Math.min(pagination.pages, (pagination.page || 1) + 1)} disabled={pagination.page >= pagination.pages}>Suivant</PageLink>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function PageLink({ sp, page, disabled, children }: { sp: ReturnType<typeof useSearchParams>; page: number; disabled?: boolean; children: React.ReactNode }) {
+  const params = new URLSearchParams(sp?.toString())
+  params.set('page', String(page))
+  return (
+    <Link href={{ pathname: '/tickets', query: Object.fromEntries(params.entries()) }} className={`px-3 h-9 rounded border border-border inline-flex items-center ${disabled ? 'pointer-events-none opacity-50' : ''}`}>
+      {children}
+    </Link>
+  )
+}

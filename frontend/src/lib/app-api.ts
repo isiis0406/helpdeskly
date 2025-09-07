@@ -37,10 +37,13 @@ async function authHeaders() {
     throw new Error("Session expired. Please login again.");
   }
 
-  // Fallback: extraire le slug du JWT d'accès si présent
-  if (!isValidSlug(tenantSlug) && session && (session as any).accessToken) {
+  // Préférence: slug dans le JWT si présent (source d'autorité)
+  if (session && (session as any).accessToken) {
     const payload = decodeJwtPayload((session as any).accessToken as string);
-    tenantSlug = payload?.currentTenantSlug || payload?.tenantSlug || undefined;
+    const jwtSlug = payload?.currentTenantSlug || payload?.tenantSlug || undefined;
+    if (isValidSlug(jwtSlug)) {
+      tenantSlug = jwtSlug;
+    }
   }
 
   const headers: Record<string, string> = {
