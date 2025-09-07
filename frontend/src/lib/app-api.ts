@@ -17,13 +17,17 @@ function decodeJwtPayload(token?: string): any | null {
 
 type HttpMethod = 'GET' | 'POST' | 'PATCH' | 'DELETE'
 
+function isValidSlug(slug?: string): slug is string {
+  return !!slug && /^[a-z0-9-]{2,50}$/.test(slug)
+}
+
 async function authHeaders() {
   const session = await auth()
   const c = await cookies()
   let tenantSlug = c.get('tenantSlug')?.value
 
   // Fallback: extraire le slug du JWT d'accès si présent
-  if (!tenantSlug && session && (session as any).accessToken) {
+  if (!isValidSlug(tenantSlug) && session && (session as any).accessToken) {
     const payload = decodeJwtPayload((session as any).accessToken as string)
     tenantSlug = payload?.currentTenantSlug || payload?.tenantSlug || undefined
   }
@@ -33,7 +37,7 @@ async function authHeaders() {
   if (session && (session as any).accessToken) {
     headers['Authorization'] = `Bearer ${(session as any).accessToken}`
   }
-  if (tenantSlug) {
+  if (isValidSlug(tenantSlug)) {
     headers['X-Tenant-Slug'] = tenantSlug
   }
   return headers

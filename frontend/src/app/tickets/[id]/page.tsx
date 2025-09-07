@@ -23,9 +23,7 @@ async function getTicket(id: string) {
 
 export default async function TicketDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  if (id === 'new') {
-    redirect('/tickets/new')
-  }
+  // Rien: le flux de création utilise désormais /tickets/create
   const ticket = await getTicket(id)
   return (
     <div className="p-6 space-y-6">

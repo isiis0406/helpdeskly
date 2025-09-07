@@ -10,6 +10,7 @@ import { TenantPrismaService } from './services/tenant-prisma.service';
 import { TenantResolutionService } from './services/tenant-resolution.service';
 import { TicketModule } from './ticket/ticket.module';
 import { UserEnrichmentService } from './user-enrichment/user-enrichment.service';
+import { UsersController } from './users/users.controller';
 
 // ... autres imports
 
@@ -33,6 +34,7 @@ import { UserEnrichmentService } from './user-enrichment/user-enrichment.service
     AuthModule,
   ],
 
+  controllers: [UsersController],
   providers: [
     ControlPrismaService,
     TenantClientFactory,

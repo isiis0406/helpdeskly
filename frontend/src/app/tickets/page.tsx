@@ -39,7 +39,7 @@ export default async function TicketsPage({ searchParams }: { searchParams: Prom
     <div className="p-6 space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Tickets</h1>
-        <Link className="inline-flex items-center px-4 py-2 rounded bg-blue-600 text-white" href="/tickets/new">
+        <Link className="inline-flex items-center px-4 py-2 rounded bg-blue-600 text-white" href="/tickets/create">
           Nouveau ticket
         </Link>
       </div>
