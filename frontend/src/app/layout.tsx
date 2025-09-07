@@ -1,12 +1,12 @@
+import { LogoutButton } from "@/components/logout-button";
 import TenantMenu from "@/components/tenant-menu";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { Toaster } from "@/components/ui/sonner";
+import { CreditCard, LayoutDashboard } from "lucide-react";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Link from "next/link";
-import { LayoutDashboard, Ticket, CreditCard } from "lucide-react";
 import "./globals.css";
-import { Toaster } from "@/components/ui/sonner";
-import { LogoutButton } from "@/components/logout-button";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -39,15 +39,18 @@ export default function RootLayout({
               Helpdeskly
             </Link>
             <nav className="flex items-center gap-6 text-sm">
-              <Link href="/dashboard" className="inline-flex items-center gap-2 opacity-95 hover:opacity-100">
+              <Link
+                href="/dashboard"
+                className="inline-flex items-center gap-2 opacity-95 hover:opacity-100"
+              >
                 <LayoutDashboard className="w-4 h-4" />
                 Dashboard
               </Link>
-              <Link href="/tickets/create" className="inline-flex items-center gap-2 opacity-95 hover:opacity-100">
-                <Ticket className="w-4 h-4" />
-                Nouveau ticket
-              </Link>
-              <Link href="/billing/plan" className="inline-flex items-center gap-2 opacity-95 hover:opacity-100">
+
+              <Link
+                href="/billing/plan"
+                className="inline-flex items-center gap-2 opacity-95 hover:opacity-100"
+              >
                 <CreditCard className="w-4 h-4" />
                 Mon plan
               </Link>

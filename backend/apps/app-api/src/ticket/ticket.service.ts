@@ -238,8 +238,9 @@ export class TicketsService {
     const canUpdateOwn = this.hasPermission(userPermissions, 'ticket.update.own')
     const isAuthor = existingTicket.authorId === userId
     const isAssignee = (existingTicket as any).assignedToId === userId
+    const isUnassigned = (existingTicket as any).assignedToId == null
     if (!canUpdateAny) {
-      if (!(canUpdateOwn && (isAuthor || isAssignee))) {
+      if (!(canUpdateOwn && (isAuthor || isAssignee || isUnassigned))) {
         throw new NotFoundException('Ticket not found') // Ne pas révéler l'existence
       }
     }

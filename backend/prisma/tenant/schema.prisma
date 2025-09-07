@@ -19,7 +19,7 @@ datasource db {
 model Ticket {
   id          String         @id @default(cuid())
   // Numéro de ticket lisible (séquentiel par tenant)
-  ticketNumber String        @unique
+  ticketNumber String        @unique @default(dbgenerated())
   title       String
   description String
   status      TicketStatus   @default(OPEN)

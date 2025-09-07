@@ -33,7 +33,8 @@ export default async function TicketDetailPage({ params }: { params: Promise<{ i
   const users = await apiGet<{ id: string; name?: string; email?: string }[]>('/users')
   const session = await auth()
   const currentUserId = (session as any)?.user?.id as string | undefined
-  const canModify = ((ticket as any).assignedToId || (ticket as any).assignedTo?.id) === currentUserId
+  const assignedToId = (ticket as any).assignedToId || (ticket as any).assignedTo?.id || null
+  const canModify = !assignedToId || assignedToId === currentUserId
   return (
     <div className="container mx-auto p-6 grid md:grid-cols-[15rem_1fr] gap-6">
       <Sidebar />
@@ -79,14 +80,16 @@ export default async function TicketDetailPage({ params }: { params: Promise<{ i
             <div><span className="text-muted-foreground">Créé:</span> {new Date(ticket.createdAt).toLocaleString()}</div>
           </div>
 
-          <TicketActionsClient
-            ticketId={ticket.id}
-            users={users}
-            currentAssignedId={(ticket as any).assignedToId || undefined}
-            currentStatus={ticket.status}
-            currentPriority={ticket.priority}
-            canModify={canModify}
-          />
+          {canModify && (
+            <TicketActionsClient
+              ticketId={ticket.id}
+              users={users}
+              currentAssignedId={(ticket as any).assignedToId || undefined}
+              currentStatus={ticket.status}
+              currentPriority={ticket.priority}
+              canModify={canModify}
+            />
+          )}
         </div>
       </div>
       </div>

@@ -107,7 +107,11 @@ export default async function TicketsListPage({
             </Link>
           </div>
         </div>
-        <TicketsSectionClient items={tickets} pagination={pagination} />
+        <TicketsSectionClient
+          items={tickets}
+          pagination={pagination}
+          currentUserId={currentUserId}
+        />
       </div>
     </main>
   );
