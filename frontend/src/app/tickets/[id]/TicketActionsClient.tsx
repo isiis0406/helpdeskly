@@ -37,10 +37,10 @@ export function TicketActionsClient({
 
   return (
     <div className="space-y-4">
-      <form action={assignAction} className="grid gap-2 border rounded p-3">
+      <form action={assignAction} className="grid gap-2 border border-border rounded p-3 bg-card">
         <input type="hidden" name="ticketId" value={ticketId} />
         <label className="text-sm">Affecté à</label>
-        <select name="assignedToId" defaultValue={currentAssignedId || ''} className="border rounded px-2 py-1">
+        <select name="assignedToId" defaultValue={currentAssignedId || ''} className="border border-border rounded px-2 py-1 bg-card">
           <option value="">Non assigné</option>
           {users.map((u) => (
             <option key={u.id} value={u.id}>
@@ -50,16 +50,16 @@ export function TicketActionsClient({
         </select>
         {assignState?.error && <div className="text-sm text-red-600">{assignState.error}</div>}
         <div>
-          <button disabled={assignPending} className="h-9 px-3 rounded bg-blue-600 text-white disabled:opacity-60">
+          <button disabled={assignPending} className="h-9 px-3 rounded bg-primary text-primary-foreground disabled:opacity-60">
             {assignPending ? 'Mise à jour…' : 'Assigner'}
           </button>
         </div>
       </form>
 
-      <form action={statusAction} className="grid gap-2 border rounded p-3">
+      <form action={statusAction} className="grid gap-2 border border-border rounded p-3 bg-card">
         <input type="hidden" name="ticketId" value={ticketId} />
         <label className="text-sm">Statut</label>
-        <select name="status" defaultValue={currentStatus} className="border rounded px-2 py-1">
+        <select name="status" defaultValue={currentStatus} className="border border-border rounded px-2 py-1 bg-card">
           <option value="OPEN">Ouvert</option>
           <option value="IN_PROGRESS">En cours</option>
           <option value="RESOLVED">Résolu</option>
@@ -67,16 +67,16 @@ export function TicketActionsClient({
         </select>
         {statusState?.error && <div className="text-sm text-red-600">{statusState.error}</div>}
         <div>
-          <button disabled={statusPending} className="h-9 px-3 rounded border">
+          <button disabled={statusPending} className="h-9 px-3 rounded border border-border">
             {statusPending ? 'Mise à jour…' : 'Mettre à jour'}
           </button>
         </div>
       </form>
 
-      <form action={prioAction} className="grid gap-2 border rounded p-3">
+      <form action={prioAction} className="grid gap-2 border border-border rounded p-3 bg-card">
         <input type="hidden" name="ticketId" value={ticketId} />
         <label className="text-sm">Priorité</label>
-        <select name="priority" defaultValue={currentPriority} className="border rounded px-2 py-1">
+        <select name="priority" defaultValue={currentPriority} className="border border-border rounded px-2 py-1 bg-card">
           <option value="LOW">Basse</option>
           <option value="MEDIUM">Moyenne</option>
           <option value="HIGH">Haute</option>
@@ -84,7 +84,7 @@ export function TicketActionsClient({
         </select>
         {prioState?.error && <div className="text-sm text-red-600">{prioState.error}</div>}
         <div>
-          <button disabled={prioPending} className="h-9 px-3 rounded border">
+          <button disabled={prioPending} className="h-9 px-3 rounded border border-border">
             {prioPending ? 'Mise à jour…' : 'Mettre à jour'}
           </button>
         </div>

@@ -20,7 +20,7 @@ export default async function MyPlanPage() {
       <div className="mb-6">
         <TenantPicker initial={tenantSlug} />
         {!tenantSlug && (
-          <p className="text-sm text-gray-600 mt-2">
+          <p className="text-sm text-muted-foreground mt-2">
             Sélectionnez un tenant pour voir/mettre à jour l'abonnement.
           </p>
         )}
@@ -28,20 +28,20 @@ export default async function MyPlanPage() {
 
       {tenantSlug && (
         <div className="grid md:grid-cols-2 gap-6">
-          <section className="border rounded p-4 bg-white">
+          <section className="border border-border rounded p-4 bg-card">
             <h2 className="font-medium mb-2">Abonnement actuel</h2>
-            <pre className="bg-gray-100 p-3 rounded text-sm overflow-auto">
+            <pre className="bg-muted p-3 rounded text-sm overflow-auto">
               {JSON.stringify(subscription, null, 2)}
             </pre>
           </section>
-          <section className="border rounded p-4 bg-white">
+          <section className="border border-border rounded p-4 bg-card">
             <h2 className="font-medium mb-4">Changer de plan</h2>
             <form action={upgradeAction} className="space-y-3">
               <div>
                 <label className="block text-sm mb-1">Nouveau plan</label>
                 <select
                   name="planId"
-                  className="w-full border rounded px-3 py-2"
+                  className="w-full border border-border rounded px-3 py-2 bg-card"
                 >
                   {Array.isArray(plans) &&
                     plans.map((p: any) => (
@@ -55,13 +55,13 @@ export default async function MyPlanPage() {
                 <label className="block text-sm mb-1">Cycle</label>
                 <select
                   name="billingCycle"
-                  className="w-full border rounded px-3 py-2"
+                  className="w-full border border-border rounded px-3 py-2 bg-card"
                 >
                   <option value="MONTHLY">Mensuel</option>
                   <option value="YEARLY">Annuel</option>
                 </select>
               </div>
-              <button className="px-4 py-2 rounded bg-blue-600 text-white">
+              <button className="px-4 py-2 rounded bg-primary text-primary-foreground">
                 Mettre à niveau
               </button>
             </form>

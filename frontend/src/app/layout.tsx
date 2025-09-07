@@ -3,8 +3,10 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Link from "next/link";
+import { LayoutDashboard, Ticket, CreditCard } from "lucide-react";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
+import { LogoutButton } from "@/components/logout-button";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -31,22 +33,29 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <header className="border-b bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60">
+        <header className="border-b bg-primary text-primary-foreground">
           <div className="container mx-auto px-6 h-14 flex items-center justify-between">
-            <Link href="/" className="font-semibold">
+            <Link href="/" className="font-semibold tracking-tight">
               Helpdeskly
             </Link>
-            <nav className="flex items-center gap-4 text-sm">
-              <Link href="/dashboard" className="hover:underline">
+            <nav className="flex items-center gap-6 text-sm">
+              <Link href="/dashboard" className="inline-flex items-center gap-2 opacity-95 hover:opacity-100">
+                <LayoutDashboard className="w-4 h-4" />
                 Dashboard
               </Link>
-              <Link href="/billing/plan" className="hover:underline">
+              <Link href="/tickets/create" className="inline-flex items-center gap-2 opacity-95 hover:opacity-100">
+                <Ticket className="w-4 h-4" />
+                Nouveau ticket
+              </Link>
+              <Link href="/billing/plan" className="inline-flex items-center gap-2 opacity-95 hover:opacity-100">
+                <CreditCard className="w-4 h-4" />
                 Mon plan
               </Link>
             </nav>
             <div className="hidden md:flex items-center gap-3">
               <ThemeToggle />
               <TenantMenu />
+              <LogoutButton />
             </div>
           </div>
         </header>

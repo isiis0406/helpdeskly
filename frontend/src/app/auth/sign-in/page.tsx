@@ -33,16 +33,16 @@ export default function SignInPage() {
   return (
     <main className="flex-1 container mx-auto p-6 max-w-md">
       <h1 className="text-2xl font-semibold mb-4">Connexion</h1>
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 bg-card border border-border rounded p-4">
         <div>
           <label className="block text-sm mb-1">Slug (tenant)</label>
-          <input className="w-full border rounded px-3 py-2" placeholder="ma-startup" {...register('tenantSlug')} />
-          <p className="text-xs text-gray-500 mt-1">Optionnel. Utile si vous avez plusieurs workspaces.</p>
+          <input className="w-full border border-border rounded px-3 py-2 bg-card" placeholder="ma-startup" {...register('tenantSlug')} />
+          <p className="text-xs text-muted-foreground mt-1">Optionnel. Utile si vous avez plusieurs workspaces.</p>
         </div>
         <div>
           <label className="block text-sm mb-1">Email</label>
           <input
-            className="w-full border rounded px-3 py-2"
+            className="w-full border border-border rounded px-3 py-2 bg-card"
             type="email"
             {...register("email")}
           />
@@ -53,7 +53,7 @@ export default function SignInPage() {
         <div>
           <label className="block text-sm mb-1">Mot de passe</label>
           <input
-            className="w-full border rounded px-3 py-2"
+            className="w-full border border-border rounded px-3 py-2 bg-card"
             type="password"
             {...register("password")}
           />
@@ -62,10 +62,7 @@ export default function SignInPage() {
           )}
         </div>
         {error && <p className="text-sm text-red-600">{error}</p>}
-        <button
-          disabled={isSubmitting}
-          className="bg-blue-600 text-white px-4 py-2 rounded"
-        >
+        <button disabled={isSubmitting} className="bg-primary text-primary-foreground px-4 py-2 rounded">
           {isSubmitting ? "Connexion…" : "Se connecter"}
         </button>
       </form>

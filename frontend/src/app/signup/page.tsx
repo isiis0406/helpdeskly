@@ -81,7 +81,7 @@ export default function SignupPage() {
       <h1 className="text-3xl font-semibold mb-6">
         Démarrer votre essai gratuit
       </h1>
-      <p className="text-gray-600 mb-8">
+      <p className="text-muted-foreground mb-8">
         Créez votre espace Helpdeskly et invitez votre équipe en quelques
         minutes.
       </p>
@@ -89,7 +89,7 @@ export default function SignupPage() {
       <FormProvider {...(methods as any)}>
         <form
           onSubmit={handleSubmit(onSubmit)}
-          className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-white border rounded-lg p-6"
+          className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-card border border-border rounded-lg p-6"
         >
           <div className="md:col-span-2 grid gap-1">
             <FormLabel>Nom de l'organisation</FormLabel>
@@ -98,7 +98,7 @@ export default function SignupPage() {
           </div>
 
           <input type="hidden" {...register("slug")} />
-          <div className="md:col-span-2 text-xs text-gray-500">
+          <div className="md:col-span-2 text-xs text-muted-foreground">
             Adresse de l'espace: https://<span className="font-mono">{watch("slug") || "votre-entreprise"}</span>.{baseDomain}
           </div>
 
@@ -122,7 +122,7 @@ export default function SignupPage() {
 
           <div className="md:col-span-2 grid gap-1">
             <FormLabel>Description (facultatif)</FormLabel>
-            <textarea className="w-full border rounded px-3 py-2" rows={3} {...register("description")} />
+            <textarea className="w-full border border-border rounded px-3 py-2 bg-card" rows={3} {...register("description")} />
             <FormMessage>{errors.description?.message as any}</FormMessage>
           </div>
 
@@ -134,7 +134,7 @@ export default function SignupPage() {
             <input type="checkbox" id="terms" {...register("acceptTerms")} />
             <label htmlFor="terms" className="text-sm">
               J'accepte les{' '}
-              <Link href="#" className="text-blue-600 underline">CGU</Link>
+              <Link href="#" className="text-primary underline">CGU</Link>
             </label>
             <FormMessage>{errors.acceptTerms?.message as any}</FormMessage>
           </div>
@@ -162,7 +162,7 @@ export default function SignupPage() {
 
           <div className="md:col-span-2 flex gap-3">
             <Button disabled={isPending}>{isPending ? 'Création…' : "Commencer l'essai"}</Button>
-            <Link href="/auth/sign-in" className="px-5 py-3 rounded border border-gray-300 text-gray-700 hover:bg-gray-50">
+            <Link href="/auth/sign-in" className="px-5 py-3 rounded border border-border text-foreground hover:bg-muted">
               J'ai déjà un compte
             </Link>
           </div>

@@ -30,43 +30,59 @@ export default async function TicketDetailPage({ params }: { params: Promise<{ i
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">{ticket.ticketNumber ? `${ticket.ticketNumber} — ` : ''}{ticket.title}</h1>
-        <Link className="text-sm underline" href="/tickets">Retour à la liste</Link>
+        <div>
+          <div className="text-xs text-muted-foreground">Ticket</div>
+          <h1 className="text-2xl font-semibold flex items-center gap-2">
+            {ticket.ticketNumber && (
+              <span className="inline-flex items-center rounded bg-platinum px-2 py-0.5 text-xs text-jet">
+                {ticket.ticketNumber}
+              </span>
+            )}
+            {ticket.title}
+          </h1>
+        </div>
+        <Link className="text-sm underline text-primary" href="/tickets">Retour</Link>
       </div>
       <div className="grid md:grid-cols-4 gap-4">
         <div className="md:col-span-3 space-y-4">
-          <div className="border rounded p-4">
+          <div className="border border-border rounded p-4 bg-card">
             <h2 className="font-medium mb-2">Description</h2>
             <p className="whitespace-pre-wrap text-sm">{ticket.description}</p>
           </div>
-          <div className="border rounded p-4">
+          <div className="border border-border rounded p-4 bg-card">
             <h2 className="font-medium mb-3">Commentaires</h2>
             <CommentForm ticketId={ticket.id} />
             <div className="mt-4 space-y-3">
               {ticket.comments?.map((c) => (
-                <div key={c.id} className="rounded border p-3">
-                  <div className="flex items-center gap-2 text-xs text-gray-600">
+                <div key={c.id} className="rounded border border-border p-3 bg-card">
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     <Avatar user={c.author} />
                     <span>{c.author?.name || c.author?.email || 'Utilisateur'}</span>
-                    <span className="text-gray-400">•</span>
+                    <span className="text-muted-foreground/70">•</span>
                     <span>{new Date(c.createdAt).toLocaleString()}</span>
                   </div>
                   <div className="text-sm mt-2 whitespace-pre-wrap">{c.body}</div>
                 </div>
               ))}
               {(!ticket.comments || ticket.comments.length === 0) && (
-                <div className="text-sm text-gray-500">Aucun commentaire</div>
+                <div className="text-sm text-muted-foreground">Aucun commentaire</div>
               )}
             </div>
           </div>
         </div>
         <div className="space-y-3">
-          <div className="border rounded p-4 text-sm">
-            <div><span className="text-gray-500">Statut:</span> {ticket.status}</div>
-            <div><span className="text-gray-500">Priorité:</span> {ticket.priority}</div>
-            <div><span className="text-gray-500">Auteur:</span> {ticket.author?.name || ticket.author?.email}</div>
-            <div><span className="text-gray-500">Assigné à:</span> {ticket.assignedTo?.name || ticket.assignedTo?.email || '-'}</div>
-            <div><span className="text-gray-500">Créé:</span> {new Date(ticket.createdAt).toLocaleString()}</div>
+          <div className="border border-border rounded p-4 text-sm bg-card space-y-2">
+            <div className="flex items-center gap-2">
+              <span className="text-muted-foreground">Statut:</span>
+              <span className="inline-flex items-center rounded-full px-2 py-0.5 bg-platinum text-jet text-xs">{ticket.status}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-muted-foreground">Priorité:</span>
+              <span className="inline-flex items-center rounded-full px-2 py-0.5 bg-platinum text-jet text-xs">{ticket.priority}</span>
+            </div>
+            <div><span className="text-muted-foreground">Auteur:</span> {ticket.author?.name || ticket.author?.email}</div>
+            <div><span className="text-muted-foreground">Assigné à:</span> {ticket.assignedTo?.name || ticket.assignedTo?.email || '-'}</div>
+            <div><span className="text-muted-foreground">Créé:</span> {new Date(ticket.createdAt).toLocaleString()}</div>
           </div>
 
           <TicketActionsClient
@@ -96,9 +112,9 @@ function CommentForm({ ticketId }: { ticketId: string }) {
   return (
     <form action={addCommentAction} className="grid gap-2">
       <input type="hidden" name="ticketId" value={ticketId} />
-      <textarea name="body" rows={3} className="border rounded p-2 text-sm" placeholder="Ajouter un commentaire..." />
+      <textarea name="body" rows={3} className="border border-border rounded p-2 text-sm bg-card" placeholder="Ajouter un commentaire..." />
       <div>
-        <button className="px-3 h-9 rounded bg-blue-600 text-white">Publier</button>
+        <button className="px-3 h-9 rounded bg-primary text-primary-foreground">Publier</button>
       </div>
     </form>
   )
@@ -108,7 +124,7 @@ function Avatar({ user, size=24 }: { user?: TicketUser; size?: number }) {
   const name = user?.name || user?.email || 'Utilisateur'
   const initials = (name || '?').split(' ').map(p=>p[0]).join('').slice(0,2).toUpperCase()
   return (
-    <div style={{width:size,height:size}} className="inline-flex items-center justify-center rounded-full bg-gray-200 text-gray-700 text-xs font-medium">
+    <div style={{width:size,height:size}} className="inline-flex items-center justify-center rounded-full bg-platinum text-jet text-xs font-medium">
       {initials}
     </div>
   )

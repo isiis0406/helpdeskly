@@ -27,7 +27,7 @@ export function TenantPicker({ initial }: { initial?: string }) {
       <button
         onClick={save}
         disabled={isPending || !slug}
-        className="h-10 px-4 rounded bg-blue-600 text-white disabled:opacity-60"
+        className="h-10 px-4 rounded bg-primary text-primary-foreground disabled:opacity-60"
       >
         {isPending ? "Enregistrement…" : "Utiliser"}
       </button>

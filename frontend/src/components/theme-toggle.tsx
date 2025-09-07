@@ -23,7 +23,7 @@ export function ThemeToggle() {
   }, [])
 
   return (
-    <button onClick={toggle} className="text-sm text-gray-600 hover:underline">
+    <button onClick={toggle} className="text-sm text-muted-foreground hover:underline">
       {dark ? 'Light' : 'Dark'}
     </button>
   )
