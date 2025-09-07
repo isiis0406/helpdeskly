@@ -126,6 +126,7 @@ export class TicketController {
     enum: ['LOW', 'MEDIUM', 'HIGH', 'URGENT'],
   })
   @ApiQuery({ name: 'assignedToId', required: false, type: String })
+  @ApiQuery({ name: 'assignee', required: false, type: String, description: "Recherche par nom/email de l'assigné" })
   @ApiOkResponse({ description: 'Liste des tickets avec pagination' })
   async findAll(
     @Request() req,
@@ -135,6 +136,7 @@ export class TicketController {
     @Query('status') status?: string,
     @Query('priority') priority?: string,
     @Query('assignedToId') assignedToId?: string,
+    @Query('assignee') assignee?: string,
   ) {
     const filters: any = {};
     if (status) filters.status = status;
@@ -146,6 +148,7 @@ export class TicketController {
       limit,
       search: q,
       filters,
+      assignee,
       userId: req.user.id,
       userPermissions: req.user.permissions || [],
     });

@@ -7,6 +7,7 @@ type TicketUser = { id: string; name?: string; email?: string }
 type Comment = { id: string; body: string; author?: TicketUser; createdAt: string }
 type Ticket = {
   id: string
+  ticketNumber?: string
   title: string
   description: string
   status: 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED'
@@ -29,7 +30,7 @@ export default async function TicketDetailPage({ params }: { params: Promise<{ i
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">{ticket.title}</h1>
+        <h1 className="text-2xl font-semibold">{ticket.ticketNumber ? `${ticket.ticketNumber} — ` : ''}{ticket.title}</h1>
         <Link className="text-sm underline" href="/tickets">Retour à la liste</Link>
       </div>
       <div className="grid md:grid-cols-4 gap-4">
@@ -44,10 +45,13 @@ export default async function TicketDetailPage({ params }: { params: Promise<{ i
             <div className="mt-4 space-y-3">
               {ticket.comments?.map((c) => (
                 <div key={c.id} className="rounded border p-3">
-                  <div className="text-xs text-gray-600">
-                    {c.author?.name || c.author?.email || 'Utilisateur'} — {new Date(c.createdAt).toLocaleString()}
+                  <div className="flex items-center gap-2 text-xs text-gray-600">
+                    <Avatar user={c.author} />
+                    <span>{c.author?.name || c.author?.email || 'Utilisateur'}</span>
+                    <span className="text-gray-400">•</span>
+                    <span>{new Date(c.createdAt).toLocaleString()}</span>
                   </div>
-                  <div className="text-sm mt-1 whitespace-pre-wrap">{c.body}</div>
+                  <div className="text-sm mt-2 whitespace-pre-wrap">{c.body}</div>
                 </div>
               ))}
               {(!ticket.comments || ticket.comments.length === 0) && (
@@ -97,5 +101,15 @@ function CommentForm({ ticketId }: { ticketId: string }) {
         <button className="px-3 h-9 rounded bg-blue-600 text-white">Publier</button>
       </div>
     </form>
+  )
+}
+
+function Avatar({ user, size=24 }: { user?: TicketUser; size?: number }) {
+  const name = user?.name || user?.email || 'Utilisateur'
+  const initials = (name || '?').split(' ').map(p=>p[0]).join('').slice(0,2).toUpperCase()
+  return (
+    <div style={{width:size,height:size}} className="inline-flex items-center justify-center rounded-full bg-gray-200 text-gray-700 text-xs font-medium">
+      {initials}
+    </div>
   )
 }

@@ -2,10 +2,12 @@ import Link from 'next/link'
 import { apiGet } from '@/lib/app-api'
 import { auth } from '@/app/api/auth/[...nextauth]/route'
 import { decodeJwtPayload } from '@/lib/jwt'
+import FiltersClient from './FiltersClient'
 
 type TicketUser = { id: string; name?: string; email?: string }
 type Ticket = {
   id: string
+  ticketNumber?: string
   title: string
   status: 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED'
   priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'
@@ -21,6 +23,7 @@ export default async function TicketsPage({ searchParams }: { searchParams: Prom
   const status = sp.status || undefined
   const priority = sp.priority || undefined
   const q = sp.q || ''
+  const assignee = sp.assignee || ''
   const assigned = sp.assigned || undefined
 
   const session = await auth()
@@ -34,6 +37,7 @@ export default async function TicketsPage({ searchParams }: { searchParams: Prom
       status,
       priority,
       q: q || undefined,
+      assignee: assignee || undefined,
       assignedToId: assigned === 'me' && currentUserId ? currentUserId : undefined,
     })
   } catch (e: any) {
@@ -55,45 +59,13 @@ export default async function TicketsPage({ searchParams }: { searchParams: Prom
         </Link>
       </div>
 
-      {/* Filters */}
-      <form className="flex gap-3 items-end">
-        <div className="grid">
-          <label className="text-sm">Recherche</label>
-          <input name="q" defaultValue={q} placeholder="Titre ou description..." className="border rounded px-2 py-1" />
-        </div>
-        <div className="grid">
-          <label className="text-sm">Statut</label>
-          <select name="status" defaultValue={status || ''} className="border rounded px-2 py-1">
-            <option value="">Tous</option>
-            <option value="OPEN">Ouvert</option>
-            <option value="IN_PROGRESS">En cours</option>
-            <option value="RESOLVED">Résolu</option>
-            <option value="CLOSED">Fermé</option>
-          </select>
-        </div>
-        <div className="grid">
-          <label className="text-sm">Priorité</label>
-          <select name="priority" defaultValue={priority || ''} className="border rounded px-2 py-1">
-            <option value="">Toutes</option>
-            <option value="LOW">Basse</option>
-            <option value="MEDIUM">Moyenne</option>
-            <option value="HIGH">Haute</option>
-            <option value="URGENT">Urgente</option>
-          </select>
-        </div>
-        <div className="grid">
-          <label className="text-sm">
-            <input type="checkbox" name="assigned" value="me" defaultChecked={assigned === 'me'} className="mr-2" />
-            Assignés à moi
-          </label>
-        </div>
-        <button className="h-9 px-3 rounded border">Filtrer</button>
-      </form>
+      <FiltersClient initial={{ q, status, priority, assigned, assignee }} />
 
       <div className="overflow-auto border rounded">
         <table className="min-w-full text-sm">
           <thead className="bg-gray-50">
             <tr>
+              <th className="text-left p-2">#</th>
               <th className="text-left p-2">Titre</th>
               <th className="text-left p-2">Statut</th>
               <th className="text-left p-2">Priorité</th>
@@ -104,6 +76,7 @@ export default async function TicketsPage({ searchParams }: { searchParams: Prom
           <tbody>
             {data.data.map((t) => (
               <tr key={t.id} className="border-t hover:bg-gray-50">
+                <td className="p-2">{t.ticketNumber || '-'}</td>
                 <td className="p-2">
                   <Link href={`/tickets/${t.id}`} className="text-blue-700 hover:underline">
                     {t.title}

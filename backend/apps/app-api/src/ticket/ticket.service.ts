@@ -6,6 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { TenantPrismaService } from '../services/tenant-prisma.service';
+import { ControlPrismaService } from '../prisma/control-prisma.service';
 import { UserEnrichmentService } from '../user-enrichment/user-enrichment.service';
 import { CreateTicketDto } from './dto/create-ticket.dto';
 
@@ -24,13 +25,22 @@ export class TicketsService {
   constructor(
     private readonly tenantPrisma: TenantPrismaService,
     private readonly userEnrichment: UserEnrichmentService,
+    private readonly controlPrisma: ControlPrismaService,
   ) {}
+
+  private async generateTicketNumber(): Promise<string> {
+    // Simple génération séquentielle basée sur le count (dev). À renforcer en prod.
+    const count = await this.tenantPrisma.client.ticket.count()
+    const next = count + 1
+    return `T-${String(next).padStart(6, '0')}`
+  }
 
   async findAll(
     options: {
       page?: number;
       limit?: number;
       search?: string;
+      assignee?: string;
       filters?: any;
       userId?: string;
       userPermissions?: string[];
@@ -40,6 +50,7 @@ export class TicketsService {
       page = 1,
       limit = 10,
       search,
+      assignee,
       filters = {},
       userId,
       userPermissions = [],
@@ -61,7 +72,26 @@ export class TicketsService {
       where.OR = [
         { title: { contains: q, mode: 'insensitive' } },
         { description: { contains: q, mode: 'insensitive' } },
+        { ticketNumber: { contains: q, mode: 'insensitive' } },
       ];
+    }
+
+    // Filtre par assigné (nom/email) via Control DB
+    if (assignee && assignee.trim()) {
+      const like = `%${assignee.trim()}%`
+      const users = await this.controlPrisma.user.findMany({
+        where: {
+          OR: [
+            { name: { contains: assignee.trim(), mode: 'insensitive' } },
+            { email: { contains: assignee.trim(), mode: 'insensitive' } },
+          ],
+          memberships: { some: { isActive: true } },
+        },
+        select: { id: true },
+      })
+      const ids = users.map(u => u.id)
+      if (ids.length > 0) where.assignedToId = { in: ids }
+      else where.assignedToId = '__none__'
     }
 
     const [tickets, total] = await Promise.all([
@@ -164,8 +194,12 @@ export class TicketsService {
       );
     }
 
+    // Générer un numéro de ticket simple
+    const ticketNumber = await this.generateTicketNumber()
+
     const ticket = await this.tenantPrisma.client.ticket.create({
       data: {
+        ticketNumber,
         title: dto.title,
         description: dto.description,
         authorId: dto.authorId,
