@@ -20,6 +20,7 @@ export default async function TicketsPage({ searchParams }: { searchParams: Prom
   const limit = Number(sp.limit || '10') || 10
   const status = sp.status || undefined
   const priority = sp.priority || undefined
+  const q = sp.q || ''
   const assigned = sp.assigned || undefined
 
   const session = await auth()
@@ -32,6 +33,7 @@ export default async function TicketsPage({ searchParams }: { searchParams: Prom
       limit,
       status,
       priority,
+      q: q || undefined,
       assignedToId: assigned === 'me' && currentUserId ? currentUserId : undefined,
     })
   } catch (e: any) {
@@ -55,6 +57,10 @@ export default async function TicketsPage({ searchParams }: { searchParams: Prom
 
       {/* Filters */}
       <form className="flex gap-3 items-end">
+        <div className="grid">
+          <label className="text-sm">Recherche</label>
+          <input name="q" defaultValue={q} placeholder="Titre ou description..." className="border rounded px-2 py-1" />
+        </div>
         <div className="grid">
           <label className="text-sm">Statut</label>
           <select name="status" defaultValue={status || ''} className="border rounded px-2 py-1">

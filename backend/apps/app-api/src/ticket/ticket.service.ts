@@ -30,6 +30,7 @@ export class TicketsService {
     options: {
       page?: number;
       limit?: number;
+      search?: string;
       filters?: any;
       userId?: string;
       userPermissions?: string[];
@@ -38,6 +39,7 @@ export class TicketsService {
     const {
       page = 1,
       limit = 10,
+      search,
       filters = {},
       userId,
       userPermissions = [],
@@ -53,15 +55,24 @@ export class TicketsService {
       filters.authorId = userId;
     }
 
+    const where: any = { ...filters };
+    if (search && search.trim().length > 0) {
+      const q = search.trim();
+      where.OR = [
+        { title: { contains: q, mode: 'insensitive' } },
+        { description: { contains: q, mode: 'insensitive' } },
+      ];
+    }
+
     const [tickets, total] = await Promise.all([
       this.tenantPrisma.client.ticket.findMany({
-        where: filters,
+        where,
         skip,
         take: limit,
         orderBy: { createdAt: 'desc' },
         include: { comments: true },
       }),
-      this.tenantPrisma.client.ticket.count({ where: filters }),
+      this.tenantPrisma.client.ticket.count({ where }),
     ]);
 
     const enrichedTickets = await this.userEnrichment.enrichEntities(tickets, [

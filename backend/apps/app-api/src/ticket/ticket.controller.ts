@@ -114,6 +114,7 @@ export class TicketController {
   })
   @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
   @ApiQuery({ name: 'limit', required: false, type: Number, example: 10 })
+  @ApiQuery({ name: 'q', required: false, type: String, description: 'Recherche texte (titre, description)' })
   @ApiQuery({
     name: 'status',
     required: false,
@@ -130,6 +131,7 @@ export class TicketController {
     @Request() req,
     @Query('page') page: number = 1,
     @Query('limit') limit: number = 10,
+    @Query('q') q?: string,
     @Query('status') status?: string,
     @Query('priority') priority?: string,
     @Query('assignedToId') assignedToId?: string,
@@ -142,6 +144,7 @@ export class TicketController {
     return this.ticketService.findAll({
       page,
       limit,
+      search: q,
       filters,
       userId: req.user.id,
       userPermissions: req.user.permissions || [],
