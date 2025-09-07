@@ -91,11 +91,14 @@ export default async function TicketsListPage({
         </div>
         
         {/* Barre filtres + toggle de vue */}
-        <div className="flex items-end justify-between gap-3">
+        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-3">
           <div className="flex-1">
             <FiltersClient initial={sp} users={users} />
           </div>
-          <TicketsViewToggle />
+          <div className="flex items-center gap-2">
+            <TicketsViewToggle />
+            <Link href="/tickets" className="h-9 px-3 rounded border border-border">Réinitialiser</Link>
+          </div>
         </div>
         <TicketsSectionClient items={tickets} pagination={pagination} />
       </div>
