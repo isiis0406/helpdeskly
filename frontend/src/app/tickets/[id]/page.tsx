@@ -41,7 +41,7 @@ export default async function TicketDetailPage({ params }: { params: Promise<{ i
             {ticket.title}
           </h1>
         </div>
-        <Link className="text-sm underline text-primary" href="/tickets">Retour</Link>
+        <Link className="text-sm underline text-accent" href="/tickets">Retour</Link>
       </div>
       <div className="grid md:grid-cols-4 gap-4">
         <div className="md:col-span-3 space-y-4">

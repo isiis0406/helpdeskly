@@ -11,7 +11,11 @@ export default function TenantPickerSelect({ options, current }: { options: { sl
     })
   }
   return (
-    <select defaultValue={current || ''} onChange={onChange} className="border border-border bg-card text-fg rounded px-2 py-1 text-sm min-w-[180px]">
+    <select
+      defaultValue={current || ''}
+      onChange={onChange}
+      className="border border-border rounded px-2 py-1 text-sm min-w-[180px] bg-white text-jet dark:bg-card dark:text-foreground"
+    >
       <option value="" disabled>
         {isPending ? 'Mise à jour…' : 'Sélectionner un tenant'}
       </option>

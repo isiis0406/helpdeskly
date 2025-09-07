@@ -1,8 +1,7 @@
 "use server"
-import { redirect } from 'next/navigation'
 import { apiPost } from '@/lib/app-api'
 
-export type CreateTicketFormState = { ok?: boolean; error?: string }
+export type CreateTicketFormState = { ok?: boolean; error?: string; id?: string }
 
 function parseApiErrorMessage(err: unknown): string {
   const msg = (err as any)?.message || 'Échec de la création'
@@ -32,7 +31,7 @@ export async function createTicketAction(prev: CreateTicketFormState, formData: 
   try {
     const created: any = await apiPost('/tickets', { title, description, priority, status, category, tags, assignedToId })
     const id = created?.id || created?.ticket?.id
-    redirect(id ? `/tickets/${id}` : '/tickets')
+    return { ok: true, id }
   } catch (e) {
     return { ok: false, error: parseApiErrorMessage(e) }
   }

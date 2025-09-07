@@ -8,14 +8,16 @@ export default async function NewTicketPage() {
   const session = await auth()
   const currentUserId = decodeJwtPayload((session as any)?.accessToken)?.sub as string | undefined
   return (
-    <div className="p-6 space-y-4">
-      <div>
-        <div className="text-xs text-muted-foreground">Tickets</div>
-        <h1 className="text-2xl font-semibold">Nouveau ticket</h1>
-        <p className="text-sm text-muted-foreground mt-1">Renseignez le titre, la description et assignez un agent.</p>
-      </div>
-      <div className="bg-card border border-border rounded p-4 max-w-3xl">
-        <CreateFormClient users={users} currentUserId={currentUserId} />
+    <div className="p-6">
+      <div className="max-w-3xl mx-auto space-y-4">
+        <div>
+          <div className="text-xs text-muted-foreground">Tickets</div>
+          <h1 className="text-2xl font-semibold">Nouveau ticket</h1>
+          <p className="text-sm text-muted-foreground mt-1">Renseignez le titre, la description et assignez un agent.</p>
+        </div>
+        <div className="bg-card border border-border rounded p-4">
+          <CreateFormClient users={users} currentUserId={currentUserId} />
+        </div>
       </div>
     </div>
   )

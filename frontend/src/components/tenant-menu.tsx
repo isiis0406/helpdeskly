@@ -24,5 +24,13 @@ export default async function TenantMenu() {
     slug: m.tenantSlug || m.tenant?.slug,
     name: m.tenantName || m.tenant?.name,
   }));
+  if (options.length <= 1) {
+    const only = options[0]
+    return (
+      <div className="text-sm text-primary-foreground/90">
+        {only?.name || only?.slug || 'Tenant'}
+      </div>
+    )
+  }
   return <TenantPickerSelect options={options} current={current} />;
 }

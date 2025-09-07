@@ -1,5 +1,6 @@
 "use client"
 import { useActionState, useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { useForm, FormProvider } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { ticketCreateSchema, type TicketCreateInput } from '@/lib/schemas/tickets'
@@ -14,6 +15,7 @@ type UserOption = { id: string; name?: string | null; email?: string | null }
 
 export function CreateFormClient({ users, currentUserId }: { users: UserOption[]; currentUserId?: string }) {
   const [error, setError] = useState<string | null>(null)
+  const router = useRouter()
   const methods = useForm<TicketCreateInput>({
     resolver: zodResolver(ticketCreateSchema),
     defaultValues: { status: 'OPEN', priority: 'MEDIUM', category: 'TECHNICAL', assignedToId: currentUserId || '' },
@@ -25,6 +27,13 @@ export function CreateFormClient({ users, currentUserId }: { users: UserOption[]
   useEffect(() => {
     if (state?.error) toast.error(state.error)
   }, [state?.error])
+
+  useEffect(() => {
+    if (state?.ok) {
+      const id = state.id
+      router.push(id ? `/tickets/${id}` : '/tickets')
+    }
+  }, [state?.ok, state?.id, router])
 
   return (
     <FormProvider {...methods}>

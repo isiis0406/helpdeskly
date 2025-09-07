@@ -67,6 +67,13 @@ export class TicketsService {
     }
 
     const where: any = { ...filters };
+    // Special value to filter unassigned tickets from query
+    if (
+      typeof where.assignedToId === 'string' &&
+      (where.assignedToId === 'none' || where.assignedToId === '__none__')
+    ) {
+      where.assignedToId = null;
+    }
     if (search && search.trim().length > 0) {
       const q = search.trim();
       where.OR = [
@@ -91,7 +98,7 @@ export class TicketsService {
       });
       const ids = users.map((u) => u.id);
       if (ids.length > 0) where.assignedToId = { in: ids };
-      else where.assignedToId = '__none__';
+      else where.assignedToId = 'none';
     }
 
     const [tickets, total] = await Promise.all([
