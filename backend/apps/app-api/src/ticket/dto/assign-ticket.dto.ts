@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsString, IsUUID } from 'class-validator';
+import { IsNotEmpty, IsString } from 'class-validator';
 
 export class AssignTicketDto {
   @ApiProperty({
@@ -9,6 +9,5 @@ export class AssignTicketDto {
   })
   @IsNotEmpty({ message: "L'ID de l'assigné est requis" })
   @IsString({ message: "L'ID de l'assigné doit être une chaîne de caractères" })
-  @IsUUID('4', { message: "L'ID de l'assigné doit être un UUID valide" })
   assignedToId!: string;
 }

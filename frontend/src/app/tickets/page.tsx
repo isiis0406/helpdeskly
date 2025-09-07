@@ -1,5 +1,7 @@
 import Link from 'next/link'
 import { apiGet } from '@/lib/app-api'
+import { auth } from '@/app/api/auth/[...nextauth]/route'
+import { decodeJwtPayload } from '@/lib/jwt'
 
 type TicketUser = { id: string; name?: string; email?: string }
 type Ticket = {
@@ -18,13 +20,20 @@ export default async function TicketsPage({ searchParams }: { searchParams: Prom
   const limit = Number(sp.limit || '10') || 10
   const status = sp.status || undefined
   const priority = sp.priority || undefined
+  const assigned = sp.assigned || undefined
+
+  const session = await auth()
+  const currentUserId = decodeJwtPayload((session as any)?.accessToken)?.sub as string | undefined
 
   let data: { data: Ticket[]; pagination: { page: number; pages: number; total: number } }
   try {
-    data = await apiGet(
-      '/tickets',
-      { page, limit, status, priority }
-    )
+    data = await apiGet('/tickets', {
+      page,
+      limit,
+      status,
+      priority,
+      assignedToId: assigned === 'me' && currentUserId ? currentUserId : undefined,
+    })
   } catch (e: any) {
     return (
       <div className="p-6">
@@ -44,8 +53,8 @@ export default async function TicketsPage({ searchParams }: { searchParams: Prom
         </Link>
       </div>
 
-      {/* Filters (basic) */}
-      <form className="flex gap-2 items-end">
+      {/* Filters */}
+      <form className="flex gap-3 items-end">
         <div className="grid">
           <label className="text-sm">Statut</label>
           <select name="status" defaultValue={status || ''} className="border rounded px-2 py-1">
@@ -65,6 +74,12 @@ export default async function TicketsPage({ searchParams }: { searchParams: Prom
             <option value="HIGH">Haute</option>
             <option value="URGENT">Urgente</option>
           </select>
+        </div>
+        <div className="grid">
+          <label className="text-sm">
+            <input type="checkbox" name="assigned" value="me" defaultChecked={assigned === 'me'} className="mr-2" />
+            Assignés à moi
+          </label>
         </div>
         <button className="h-9 px-3 rounded border">Filtrer</button>
       </form>

@@ -1,5 +1,5 @@
 "use client"
-import { useActionState, useState } from 'react'
+import { useActionState, useState, useEffect } from 'react'
 import { useForm, FormProvider } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { ticketCreateSchema, type TicketCreateInput } from '@/lib/schemas/tickets'
@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { FormLabel, FormMessage } from '@/components/ui/form'
 import { createTicketAction, type CreateTicketFormState } from './actions'
+import { toast } from 'sonner'
 
 type UserOption = { id: string; name?: string | null; email?: string | null }
 
@@ -20,6 +21,10 @@ export function CreateFormClient({ users, currentUserId }: { users: UserOption[]
 
   const { register, formState: { errors }, trigger } = methods
   const [state, formAction, isSubmitting] = useActionState<CreateTicketFormState, FormData>(createTicketAction as any, {})
+
+  useEffect(() => {
+    if (state?.error) toast.error(state.error)
+  }, [state?.error])
 
   return (
     <FormProvider {...methods}>

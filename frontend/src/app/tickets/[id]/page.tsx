@@ -1,7 +1,7 @@
 import Link from 'next/link'
-import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { apiGet, apiPost } from '@/lib/app-api'
+import { TicketActionsClient } from './TicketActionsClient'
 
 type TicketUser = { id: string; name?: string; email?: string }
 type Comment = { id: string; body: string; author?: TicketUser; createdAt: string }
@@ -25,6 +25,7 @@ export default async function TicketDetailPage({ params }: { params: Promise<{ i
   const { id } = await params
   // Rien: le flux de création utilise désormais /tickets/create
   const ticket = await getTicket(id)
+  const users = await apiGet<{ id: string; name?: string; email?: string }[]>('/users')
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -63,6 +64,14 @@ export default async function TicketDetailPage({ params }: { params: Promise<{ i
             <div><span className="text-gray-500">Assigné à:</span> {ticket.assignedTo?.name || ticket.assignedTo?.email || '-'}</div>
             <div><span className="text-gray-500">Créé:</span> {new Date(ticket.createdAt).toLocaleString()}</div>
           </div>
+
+          <TicketActionsClient
+            ticketId={ticket.id}
+            users={users}
+            currentAssignedId={(ticket as any).assignedToId || undefined}
+            currentStatus={ticket.status}
+            currentPriority={ticket.priority}
+          />
         </div>
       </div>
     </div>
