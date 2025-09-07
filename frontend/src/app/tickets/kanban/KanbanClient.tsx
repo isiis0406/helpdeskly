@@ -1,5 +1,6 @@
 "use client"
 import { useEffect, useMemo, useState } from 'react'
+import Link from 'next/link'
 import { apiPatch } from '@/lib/app-api'
 import { BadgePriority, BadgeStatus } from '@/components/badges'
 
@@ -20,7 +21,7 @@ const COLUMNS: { key: Ticket['status']; title: string }[] = [
   { key: 'CLOSED', title: 'Fermé' },
 ]
 
-export function KanbanClient({ items }: { items: Ticket[] }) {
+export function KanbanClient({ items, currentUserId }: { items: Ticket[]; currentUserId?: string }) {
   const [tickets, setTickets] = useState(items)
   const [hoverCol, setHoverCol] = useState<Ticket['status'] | null>(null)
 
@@ -74,18 +75,25 @@ export function KanbanClient({ items }: { items: Ticket[] }) {
             onDragEnter={()=>setHoverCol(col.key)}
             onDragLeave={()=>setHoverCol(null)}
           >
-            {grouped[col.key].map(t => (
-              <div key={t.id} draggable onDragStart={(e)=>onDragStart(e, t.id)}
-                   className="rounded border border-border bg-background p-3 cursor-grab active:cursor-grabbing shadow-sm hover:shadow">
-                <div className="text-xs text-muted-foreground mb-1">{t.ticketNumber}</div>
-                <div className="font-medium text-sm mb-1 line-clamp-2">{t.title}</div>
+            {grouped[col.key].map(t => {
+              const canDrag = !!currentUserId && (t.assignedTo?.id === currentUserId)
+              return (
+              <div key={t.id} draggable={canDrag} onDragStart={(e)=> canDrag && onDragStart(e, t.id)}
+                   title={canDrag ? undefined : 'Non assigné à vous'}
+                   className={`rounded border border-border bg-background p-3 ${canDrag ? 'cursor-grab active:cursor-grabbing' : 'cursor-not-allowed opacity-90'} shadow-sm hover:shadow`}>
+                <div className="text-xs text-muted-foreground mb-1">
+                  <Link className="underline underline-offset-4 text-accent" href={`/tickets/${t.id}`}>{t.ticketNumber}</Link>
+                </div>
+                <div className="font-medium text-sm mb-1 line-clamp-2">
+                  <Link className="hover:underline" href={`/tickets/${t.id}`}>{t.title}</Link>
+                </div>
                 <div className="flex items-center gap-2 text-xs">
                   <BadgeStatus value={t.status} />
                   <BadgePriority value={t.priority} />
                   <span className="ml-auto text-muted-foreground">{t.assignedTo?.name || t.assignedTo?.email || '—'}</span>
                 </div>
               </div>
-            ))}
+            )})}
             {grouped[col.key].length === 0 && (
               <div className="text-xs text-muted-foreground">Déposez ici</div>
             )}

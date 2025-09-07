@@ -11,12 +11,14 @@ export function TicketActionsClient({
   currentAssignedId,
   currentStatus,
   currentPriority,
+  canModify = true,
 }: {
   ticketId: string
   users: User[]
   currentAssignedId?: string | null
   currentStatus: 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED'
   currentPriority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'
+  canModify?: boolean
 }) {
   const [assignState, assignAction, assignPending] = useActionState<ActionState, FormData>(assignTicketAction as any, {})
   const [statusState, statusAction, statusPending] = useActionState<ActionState, FormData>(updateStatusAction as any, {})
@@ -37,7 +39,10 @@ export function TicketActionsClient({
 
   return (
     <div className="space-y-4">
-      <form action={assignAction} className="grid gap-2 border border-border rounded p-3 bg-card">
+      {!canModify && (
+        <div className="text-xs text-muted-foreground">Vous ne pouvez modifier ce ticket que s'il vous est assigné.</div>
+      )}
+      {canModify && (<form action={assignAction} className="grid gap-2 border border-border rounded p-3 bg-card">
         <input type="hidden" name="ticketId" value={ticketId} />
         <label className="text-sm">Affecté à</label>
         <select name="assignedToId" defaultValue={currentAssignedId || ''} className="border border-border rounded px-2 py-1 bg-card">
@@ -54,7 +59,7 @@ export function TicketActionsClient({
             {assignPending ? 'Mise à jour…' : 'Assigner'}
           </button>
         </div>
-      </form>
+      </form>)}
 
       <form action={statusAction} className="grid gap-2 border border-border rounded p-3 bg-card">
         <input type="hidden" name="ticketId" value={ticketId} />
@@ -67,7 +72,7 @@ export function TicketActionsClient({
         </select>
         {statusState?.error && <div className="text-sm text-red-600">{statusState.error}</div>}
         <div>
-          <button disabled={statusPending} className="h-9 px-3 rounded border border-border">
+          <button disabled={statusPending || !canModify} className="h-9 px-3 rounded border border-border">
             {statusPending ? 'Mise à jour…' : 'Mettre à jour'}
           </button>
         </div>
@@ -84,7 +89,7 @@ export function TicketActionsClient({
         </select>
         {prioState?.error && <div className="text-sm text-red-600">{prioState.error}</div>}
         <div>
-          <button disabled={prioPending} className="h-9 px-3 rounded border border-border">
+          <button disabled={prioPending || !canModify} className="h-9 px-3 rounded border border-border">
             {prioPending ? 'Mise à jour…' : 'Mettre à jour'}
           </button>
         </div>

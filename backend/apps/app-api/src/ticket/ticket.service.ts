@@ -234,12 +234,14 @@ export class TicketsService {
     }
 
     // Vérifier les permissions pour la modification
-    if (
-      this.hasPermission(userPermissions, 'ticket.update.own') &&
-      !this.hasPermission(userPermissions, 'ticket.update') &&
-      existingTicket.authorId !== userId
-    ) {
-      throw new NotFoundException('Ticket not found'); // Ne pas révéler l'existence
+    const canUpdateAny = this.hasPermission(userPermissions, 'ticket.update')
+    const canUpdateOwn = this.hasPermission(userPermissions, 'ticket.update.own')
+    const isAuthor = existingTicket.authorId === userId
+    const isAssignee = (existingTicket as any).assignedToId === userId
+    if (!canUpdateAny) {
+      if (!(canUpdateOwn && (isAuthor || isAssignee))) {
+        throw new NotFoundException('Ticket not found') // Ne pas révéler l'existence
+      }
     }
 
     // Validation seulement si nécessaire
@@ -265,24 +267,27 @@ export class TicketsService {
     ]);
   }
 
-  async assign(id: string, assignedToId: string) {
-    const isValid =
-      await this.userEnrichment.validateUserMembership(assignedToId);
+  async assign(id: string, assignedToId: string, actorUserId?: string, actorPermissions: string[] = []) {
+    const existing = await this.tenantPrisma.client.ticket.findUnique({ where: { id } })
+    if (!existing) throw new NotFoundException('Ticket not found')
+
+    const canUpdateAny = actorPermissions.includes('ticket.update') || actorPermissions.includes('ticket.assign')
+    const isAssignee = (existing as any).assignedToId === actorUserId
+    if (!canUpdateAny && !isAssignee) {
+      throw new BadRequestException('Only current assignee can reassign this ticket')
+    }
+
+    const isValid = await this.userEnrichment.validateUserMembership(assignedToId)
     if (!isValid) {
-      throw new BadRequestException(
-        `Assignee ${assignedToId} is not a member of this tenant`,
-      );
+      throw new BadRequestException(`Assignee ${assignedToId} is not a member of this tenant`)
     }
 
     const ticket = await this.tenantPrisma.client.ticket.update({
       where: { id },
       data: { assignedToId },
-    });
+    })
 
-    return this.userEnrichment.enrichEntity(ticket, [
-      'authorId',
-      'assignedToId',
-    ]);
+    return this.userEnrichment.enrichEntity(ticket, ['authorId', 'assignedToId'])
   }
 
   async delete(id: string, userId?: string, userPermissions: string[] = []) {

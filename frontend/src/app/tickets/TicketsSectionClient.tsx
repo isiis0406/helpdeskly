@@ -17,7 +17,7 @@ type Ticket = {
 }
 type Pagination = { page: number; limit: number; total: number; pages: number }
 
-export function TicketsSectionClient({ items, pagination }: { items: Ticket[]; pagination?: Pagination }) {
+export function TicketsSectionClient({ items, pagination, currentUserId }: { items: Ticket[]; pagination?: Pagination; currentUserId?: string }) {
   const [view, setView] = useState<'list'|'kanban'>('list')
   const sp = useSearchParams()
 
@@ -48,8 +48,8 @@ export function TicketsSectionClient({ items, pagination }: { items: Ticket[]; p
       <div className="font-medium mb-1">Aucun ticket ne correspond à vos filtres</div>
       <div className="text-muted-foreground mb-4">Essayez de réinitialiser les filtres ou créez un nouveau ticket.</div>
       <div className="flex items-center justify-center gap-2">
-        <Link href="/tickets" className="h-9 px-3 rounded border border-border">Réinitialiser</Link>
-        <Link href="/tickets/create" className="h-9 px-3 rounded bg-primary text-primary-foreground">Nouveau ticket</Link>
+        <Link href="/tickets" className="inline-flex items-center justify-center h-9 px-3 rounded border border-border">Réinitialiser</Link>
+        <Link href="/tickets/create" className="inline-flex items-center justify-center h-9 px-3 rounded bg-primary text-primary-foreground">Nouveau ticket</Link>
       </div>
     </div>
   )
@@ -59,11 +59,11 @@ export function TicketsSectionClient({ items, pagination }: { items: Ticket[]; p
       {/* Info bar */}
       <div className="flex items-center justify-between text-sm">
         <div className="text-muted-foreground">{total} ticket{total > 1 ? 's' : ''}</div>
-        <Link href="/tickets/create" className="h-9 px-3 rounded bg-primary text-primary-foreground">Nouveau ticket</Link>
+        <Link href="/tickets/create" className="inline-flex items-center justify-center h-9 px-3 rounded bg-primary text-primary-foreground">Nouveau ticket</Link>
       </div>
 
       {view === 'kanban' ? (
-        items.length === 0 ? Empty : <KanbanClient items={items} />
+        items.length === 0 ? Empty : <KanbanClient items={items} currentUserId={currentUserId} />
       ) : (
         items.length === 0 ? Empty : <div className="overflow-x-auto bg-card border border-border rounded">
           <table className="w-full text-sm">

@@ -242,7 +242,7 @@ export class TicketController {
     @Body() assignTicketDto: AssignTicketDto, // ✅ DTO corrigé
     @Request() req,
   ) {
-    return this.ticketService.assign(id, assignTicketDto.assignedToId); // ✅ Utilisation correcte
+    return this.ticketService.assign(id, assignTicketDto.assignedToId, req.user.id, req.user.permissions || []);
   }
 
   @Delete(':id')

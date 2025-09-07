@@ -1,5 +1,5 @@
+import { auth } from "@/app/api/auth/[...nextauth]/route";
 import { Sidebar } from "@/components/sidebar";
-import { TenantPicker } from "@/components/tenant-picker";
 import { apiGet } from "@/lib/app-api";
 import { tPriority, tStatus } from "@/lib/i18n";
 import { cookies } from "next/headers";
@@ -75,6 +75,8 @@ export default async function TicketsListPage({
   const users = tenantSlug
     ? await apiGet<{ id: string; name?: string; email?: string }[]>(`/users`)
     : [];
+  const session = await auth();
+  const currentUserId = (session as any)?.user?.id as string | undefined;
 
   return (
     <main className="container mx-auto p-6 grid md:grid-cols-[15rem_1fr] gap-6">
@@ -89,7 +91,7 @@ export default async function TicketsListPage({
             Nouveau ticket
           </Link>
         </div>
-        
+
         {/* Barre filtres + toggle de vue */}
         <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-3">
           <div className="flex-1">
@@ -97,7 +99,12 @@ export default async function TicketsListPage({
           </div>
           <div className="flex items-center gap-2">
             <TicketsViewToggle />
-            <Link href="/tickets" className="h-9 px-3 rounded border border-border">Réinitialiser</Link>
+            <Link
+              href="/tickets"
+              className="h-9 px-3 rounded border border-border"
+            >
+              Réinitialiser
+            </Link>
           </div>
         </div>
         <TicketsSectionClient items={tickets} pagination={pagination} />
