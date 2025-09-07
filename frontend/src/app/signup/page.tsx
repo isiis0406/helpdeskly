@@ -1,11 +1,16 @@
 "use client";
-import { useEffect, useState, useTransition } from "react";
-import { useForm } from "react-hook-form";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { FormProvider, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { signupTenantAction } from "@/app/actions/tenants";
 import { signIn } from "next-auth/react";
 import { signupSchema, type SignupInput } from "@/lib/schemas/tenants";
 import Link from "next/link";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
+import { slugify } from "@/lib/slugify";
+import { setTenantSlugAction } from "@/app/actions/tenant-context";
 
 type FormValues = SignupInput;
 
@@ -15,6 +20,7 @@ export default function SignupPage() {
     undefined
   );
   const [isPending, startTransition] = useTransition();
+  const baseDomain = process.env.NEXT_PUBLIC_TENANT_BASE_DOMAIN || 'helpdeskly.com'
 
   const {
     register,
@@ -26,43 +32,48 @@ export default function SignupPage() {
     resolver: zodResolver(signupSchema) as any,
     defaultValues: { acceptTerms: true },
   });
+  const methods = useMemo(() => ({ register, handleSubmit, setValue, watch, formState: { errors } }), [register, handleSubmit, setValue, watch, errors]);
 
   const onSubmit = (values: FormValues) => {
-    setServerError(null);
-    setSuggestions(undefined);
+    setServerError(null)
+    setSuggestions(undefined)
     startTransition(async () => {
-      const res = await signupTenantAction(values);
-      if (!res.ok) {
-        setServerError(res.message || "Inscription impossible");
-        setSuggestions(res.suggestions);
-        return;
+      try {
+        const res = await signupTenantAction(values)
+        if (!res.ok) {
+          setServerError(res.message || 'Inscription impossible')
+          setSuggestions(res.suggestions)
+          return
+        }
+        // Définir le tenant courant pour l'App API
+        try {
+          const createdSlug = (res as any)?.data?.tenant?.slug || (methods as any).watch?.('slug')
+          if (createdSlug) await setTenantSlugAction(createdSlug)
+        } catch {}
+        // Connexion automatique (sans redirection implicite pour contrôler l'UX)
+        const sign = await signIn('credentials', {
+          email: values.adminEmail,
+          password: values.adminPassword,
+          tenantSlug: (methods as any).watch?.('slug') || undefined,
+          redirect: false,
+        })
+        if (sign?.ok) {
+          window.location.href = '/dashboard'
+        } else {
+          setServerError("Compte créé mais la connexion automatique a échoué. Veuillez vous connecter.")
+        }
+      } catch (e: any) {
+        setServerError(e?.message || 'Une erreur est survenue')
       }
-      // Auto-login avec les credentials saisis
-      await signIn("credentials", {
-        email: values.adminEmail,
-        password: values.adminPassword,
-        redirect: true,
-        callbackUrl: "/dashboard",
-      });
-    });
-  };
-
-  // Auto-suggestion du slug à partir du nom
-  const tenantName = watch("tenantName");
-  function suggestSlugFromName(name: string) {
-    return name
-      .toLowerCase()
-      .trim()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-+|-+$/g, "");
+    })
   }
 
+  // Auto-suggestion du slug à partir du nom (non exposé en champ éditable)
+  const tenantName = watch("tenantName");
+
   useEffect(() => {
-    const current = watch("slug");
     const tn = watch("tenantName");
-    if (!current && tn) {
-      setValue("slug", suggestSlugFromName(tn), { shouldValidate: true });
-    }
+    setValue("slug", slugify(tn || ""), { shouldValidate: true });
   }, [watch("tenantName")]);
 
   return (
@@ -75,100 +86,58 @@ export default function SignupPage() {
         minutes.
       </p>
 
-      <form
-        onSubmit={handleSubmit(onSubmit)}
-        className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-white border rounded-lg p-6"
-      >
-        <div className="md:col-span-2">
-          <label className="block text-sm mb-1">Nom de l'organisation</label>
-          <input
-            className="w-full border rounded px-3 py-2"
-            {...register("tenantName")}
-            
-          />
-          {errors.tenantName && (
-            <p className="text-sm text-red-600">
-              {errors.tenantName.message as string}
-            </p>
-          )}
-        </div>
+      <FormProvider {...(methods as any)}>
+        <form
+          onSubmit={handleSubmit(onSubmit)}
+          className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-white border rounded-lg p-6"
+        >
+          <div className="md:col-span-2 grid gap-1">
+            <FormLabel>Nom de l'organisation</FormLabel>
+            <Input {...register("tenantName")} />
+            <FormMessage>{errors.tenantName?.message as any}</FormMessage>
+          </div>
 
-        <input type="hidden" {...register("slug")} />
-        <div className="md:col-span-2 text-xs text-gray-500">
-          URL: https://<span className="font-mono">{watch("slug") || "votre-slug"}</span>.helpdeskly.com
-        </div>
-        <div>
-          <label className="block text-sm mb-1">Email administrateur</label>
-          <input
-            className="w-full border rounded px-3 py-2"
-            type="email"
-            {...register("adminEmail")}
-          />
-          {errors.adminEmail && (
-            <p className="text-sm text-red-600">
-              {errors.adminEmail.message as string}
-            </p>
-          )}
-        </div>
+          <input type="hidden" {...register("slug")} />
+          <div className="md:col-span-2 text-xs text-gray-500">
+            Adresse de l'espace: https://<span className="font-mono">{watch("slug") || "votre-entreprise"}</span>.{baseDomain}
+          </div>
 
-        <div>
-          <label className="block text-sm mb-1">Nom administrateur</label>
-          <input
-            className="w-full border rounded px-3 py-2"
-            {...register("adminName")}
-          />
-          {errors.adminName && (
-            <p className="text-sm text-red-600">
-              {errors.adminName.message as string}
-            </p>
-          )}
-        </div>
-        <div>
-          <label className="block text-sm mb-1">Mot de passe</label>
-          <input
-            className="w-full border rounded px-3 py-2"
-            type="password"
-            {...register("adminPassword")}
-          />
-          {errors.adminPassword && (
-            <p className="text-sm text-red-600">
-              {errors.adminPassword.message as string}
-            </p>
-          )}
-        </div>
+          <div className="grid gap-1">
+            <FormLabel>Email administrateur</FormLabel>
+            <Input type="email" {...register("adminEmail")} />
+            <FormMessage>{errors.adminEmail?.message as any}</FormMessage>
+          </div>
 
-        <div className="md:col-span-2">
-          <label className="block text-sm mb-1">Description (facultatif)</label>
-          <textarea
-            className="w-full border rounded px-3 py-2"
-            rows={3}
-            {...register("description")}
-          />
-          {errors.description && (
-            <p className="text-sm text-red-600">
-              {errors.description.message as string}
-            </p>
-          )}
-        </div>
+          <div className="grid gap-1">
+            <FormLabel>Nom administrateur</FormLabel>
+            <Input {...register("adminName")} />
+            <FormMessage>{errors.adminName?.message as any}</FormMessage>
+          </div>
+
+          <div className="grid gap-1">
+            <FormLabel>Mot de passe</FormLabel>
+            <Input type="password" {...register("adminPassword")} />
+            <FormMessage>{errors.adminPassword?.message as any}</FormMessage>
+          </div>
+
+          <div className="md:col-span-2 grid gap-1">
+            <FormLabel>Description (facultatif)</FormLabel>
+            <textarea className="w-full border rounded px-3 py-2" rows={3} {...register("description")} />
+            <FormMessage>{errors.description?.message as any}</FormMessage>
+          </div>
 
         {/* v2: logo uploader & domaine provisionné automatiquement côté backend */}
 
         {/* Jours d'essai définis par configuration (env côté front et backend) */}
 
-        <div className="md:col-span-2 flex items-center gap-2">
-          <input type="checkbox" id="terms" {...register("acceptTerms")} />
-          <label htmlFor="terms" className="text-sm">
-            J'accepte les{" "}
-            <Link href="#" className="text-blue-600 underline">
-              CGU
-            </Link>
-          </label>
-          {errors.acceptTerms && (
-            <p className="text-sm text-red-600">
-              {errors.acceptTerms.message as string}
-            </p>
-          )}
-        </div>
+          <div className="md:col-span-2 flex items-center gap-2">
+            <input type="checkbox" id="terms" {...register("acceptTerms")} />
+            <label htmlFor="terms" className="text-sm">
+              J'accepte les{' '}
+              <Link href="#" className="text-blue-600 underline">CGU</Link>
+            </label>
+            <FormMessage>{errors.acceptTerms?.message as any}</FormMessage>
+          </div>
 
         {serverError && (
           <div className="md:col-span-2 bg-red-50 border border-red-200 text-red-700 rounded p-3 text-sm">
@@ -180,7 +149,7 @@ export default function SignupPage() {
                   <button
                     type="button"
                     key={s}
-                    onClick={() => setValue("slug", s)}
+                    onClick={() => { setValue("slug", s, { shouldValidate: true }) }}
                     className="ml-2 underline"
                   >
                     {s}
@@ -191,21 +160,14 @@ export default function SignupPage() {
           </div>
         )}
 
-        <div className="md:col-span-2 flex gap-3">
-          <button
-            disabled={isPending}
-            className="px-5 py-3 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60"
-          >
-            {isPending ? "Création…" : "Commencer l'essai"}
-          </button>
-          <Link
-            href="/auth/sign-in"
-            className="px-5 py-3 rounded border border-gray-300 text-gray-700 hover:bg-gray-50"
-          >
-            J'ai déjà un compte
-          </Link>
-        </div>
-      </form>
+          <div className="md:col-span-2 flex gap-3">
+            <Button disabled={isPending}>{isPending ? 'Création…' : "Commencer l'essai"}</Button>
+            <Link href="/auth/sign-in" className="px-5 py-3 rounded border border-gray-300 text-gray-700 hover:bg-gray-50">
+              J'ai déjà un compte
+            </Link>
+          </div>
+        </form>
+      </FormProvider>
     </main>
   );
 }
