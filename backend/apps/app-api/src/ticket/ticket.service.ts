@@ -30,9 +30,9 @@ export class TicketsService {
 
   private async generateTicketNumber(): Promise<string> {
     // Simple génération séquentielle basée sur le count (dev). À renforcer en prod.
-    const count = await this.tenantPrisma.client.ticket.count()
-    const next = count + 1
-    return `T-${String(next).padStart(6, '0')}`
+    const count = await this.tenantPrisma.client.ticket.count();
+    const next = count + 1;
+    return `T-${String(next).padStart(6, '0')}`;
   }
 
   async findAll(
@@ -78,7 +78,7 @@ export class TicketsService {
 
     // Filtre par assigné (nom/email) via Control DB
     if (assignee && assignee.trim()) {
-      const like = `%${assignee.trim()}%`
+      const like = `%${assignee.trim()}%`;
       const users = await this.controlPrisma.user.findMany({
         where: {
           OR: [
@@ -88,10 +88,10 @@ export class TicketsService {
           memberships: { some: { isActive: true } },
         },
         select: { id: true },
-      })
-      const ids = users.map(u => u.id)
-      if (ids.length > 0) where.assignedToId = { in: ids }
-      else where.assignedToId = '__none__'
+      });
+      const ids = users.map((u) => u.id);
+      if (ids.length > 0) where.assignedToId = { in: ids };
+      else where.assignedToId = '__none__';
     }
 
     const [tickets, total] = await Promise.all([
@@ -195,7 +195,7 @@ export class TicketsService {
     }
 
     // Générer un numéro de ticket simple
-    const ticketNumber = await this.generateTicketNumber()
+    const ticketNumber = await this.generateTicketNumber();
 
     const ticket = await this.tenantPrisma.client.ticket.create({
       data: {

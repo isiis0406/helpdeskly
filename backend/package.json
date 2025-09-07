@@ -24,7 +24,8 @@
     "db:deploy:tenants": "ts-node scripts/deploy-tenants.ts",
     "fix:migration:tenant": "ts-node scripts/fix-tenant-migration.ts",
     "db:seed:all": "pnpm db:seed:control && pnpm db:seed:tenant",
-    "db:studio": "prisma studio --schema prisma/control/schema.prisma"
+    "db:studio": "prisma studio --schema prisma/control/schema.prisma",
+    "backfill:tenants": "ts-node scripts/backfill-all-tenants.ts"
   },
   "prisma": {
     "seed": "ts-node prisma/control/seed.ts"

@@ -113,3 +113,20 @@ Tip: Run from repo root using `pnpm --filter backend <script>` or `pnpm -C backe
 
 - Missing tables during force reset
   - Force reset in tenant seed is wrapped in try/catch; if tables do not exist yet (first run), it continues safely.
+
+## Safe Migration Workflow (Multi‑tenant)
+
+- Expand → Backfill → Contract to avoid downtime and P3018 errors on populated tenant DBs.
+- Expand (migration A):
+  - Add new columns as nullable; add tables without strict FKs; create non-transactional indexes separately if using `CONCURRENTLY`.
+  - If you need a value for new inserts, set a DB default (sequence/expr) in SQL.
+- Backfill (script):
+  - Use `pnpm -C backend backfill:tenants --sql "..."` to populate values across all tenants before tightening constraints.
+- Contract (migration B):
+  - Set columns to `NOT NULL`, add `UNIQUE`/FK constraints, or attach unique indexes created earlier.
+
+Examples:
+- Backfill all tenants:
+  - `CONTROL_DATABASE_URL=... DATABASE_URL=... pnpm -C backend backfill:tenants --sql "UPDATE tickets SET ... WHERE ...;"`
+- Per-tenant fix helper (example for ticketNumber):
+  - `pnpm -C backend fix:migration:tenant --slug <tenantSlug>`
